@@ -1,6 +1,5 @@
-use macroquad::prelude::*;
-use crate::player::Player;
 use crate::level::Level;
+use crate::player::Player;
 
 pub fn resolve_collisions(player: &mut Player, level: &Level) {
     player.on_ground = false;

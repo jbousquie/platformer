@@ -1,4 +1,5 @@
 use macroquad::prelude::*;
+use crate::constants::*;
 
 pub const LEVEL_WIDTH: f32 = 3. * 1024.;
 pub const LEVEL_HEIGHT: f32 = 3. * 768.;
@@ -41,10 +42,10 @@ impl Level {
         }
 
         Self {
-            ground: Rect::new(0., LEVEL_HEIGHT - 50., LEVEL_WIDTH, 50.),
-            ceiling: Rect::new(0., 0., LEVEL_WIDTH, 50.),
-            left_wall: Rect::new(0., 0., 50., LEVEL_HEIGHT),
-            right_wall: Rect::new(LEVEL_WIDTH - 50., 0., 50., LEVEL_HEIGHT),
+            ground: Rect::new(0., LEVEL_HEIGHT - GROUND_HEIGHT, LEVEL_WIDTH, GROUND_HEIGHT),
+            ceiling: Rect::new(0., 0., LEVEL_WIDTH, CEILING_HEIGHT),
+            left_wall: Rect::new(0., 0., WALL_WIDTH, LEVEL_HEIGHT),
+            right_wall: Rect::new(LEVEL_WIDTH - WALL_WIDTH, 0., WALL_WIDTH, LEVEL_HEIGHT),
             platforms,
         }
     }

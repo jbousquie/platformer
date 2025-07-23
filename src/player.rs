@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
-use crate::constants::{PLAYER_SIZE, PLAYER_SPEED, JUMP_FORCE, GRAVITY};
+use crate::constants::{PLAYER_SIZE, PLAYER_SPEED, JUMP_FORCE, GRAVITY, GROUND_HEIGHT};
+use crate::level::LEVEL_HEIGHT;
 
 pub struct Player {
     pub rect: Rect,
@@ -10,7 +11,12 @@ pub struct Player {
 impl Player {
     pub fn new() -> Self {
         Self {
-            rect: Rect::new(screen_width() / 2., screen_height() / 2., PLAYER_SIZE, PLAYER_SIZE),
+            rect: Rect::new(
+                100.,
+                LEVEL_HEIGHT - GROUND_HEIGHT - PLAYER_SIZE,
+                PLAYER_SIZE,
+                PLAYER_SIZE,
+            ),
             velocity: Vec2::new(0., 0.),
             on_ground: false,
         }
