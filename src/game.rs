@@ -3,6 +3,7 @@
 //! This module contains the main game loop and game state management.
 
 use crate::camera::Camera;
+use crate::items;
 use crate::level::Level;
 use crate::physics;
 use crate::player::Player;
@@ -11,7 +12,7 @@ use macroquad::prelude::*;
 /// Runs the main game loop.
 pub async fn run() {
     let mut player = Player::new();
-    let level = Level::new();
+    let mut level = Level::new();
     let mut camera = Camera::new();
 
     loop {
@@ -19,7 +20,15 @@ pub async fn run() {
 
         // Update
         player.update(dt);
-        physics::resolve_collisions(&mut player, &level);
+        physics::resolve_player_collisions(&mut player, &level);
+        items::process_items(
+            &mut level.items,
+            &player,
+            &level.ground,
+            &level.platforms,
+            dt,
+        );
+
         camera.update(&player);
 
         // Draw

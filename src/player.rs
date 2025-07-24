@@ -2,9 +2,9 @@
 //!
 //! This module defines the player's behavior and properties.
 
-use macroquad::prelude::*;
-use crate::constants::{PLAYER_SIZE, PLAYER_SPEED, JUMP_FORCE, GRAVITY, GROUND_HEIGHT};
+use crate::constants::{GRAVITY, GROUND_HEIGHT, JUMP_FORCE, PLAYER_SIZE, PLAYER_SPEED};
 use crate::level::LEVEL_HEIGHT;
+use macroquad::prelude::*;
 
 /// Represents the different states the player can be in.
 pub enum PlayerState {
@@ -21,6 +21,7 @@ pub struct Player {
     pub velocity: Vec2,
     pub on_ground: bool,
     pub state: PlayerState,
+    pub facing_right: bool,
 }
 
 impl Player {
@@ -32,6 +33,7 @@ impl Player {
             velocity: Vec2::new(0., 0.),
             on_ground: false,
             state: PlayerState::Idle,
+            facing_right: true,
         }
     }
 
@@ -48,8 +50,10 @@ impl Player {
         // Handle input
         if is_key_down(KeyCode::Right) {
             self.velocity.x = PLAYER_SPEED;
+            self.facing_right = true;
         } else if is_key_down(KeyCode::Left) {
             self.velocity.x = -PLAYER_SPEED;
+            self.facing_right = false;
         } else {
             self.velocity.x = 0.;
         }
@@ -80,6 +84,12 @@ impl Player {
 
     /// Draws the player on the screen.
     pub fn draw(&self) {
-        draw_rectangle(self.position.x, self.position.y, self.size.x, self.size.y, WHITE);
+        draw_rectangle(
+            self.position.x,
+            self.position.y,
+            self.size.x,
+            self.size.y,
+            WHITE,
+        );
     }
 }

@@ -8,6 +8,7 @@ mod physics;
 mod game;
 mod level;
 mod player;
+mod items;
 
 /// Configures the game window.
 fn window_conf() -> macroquad::prelude::Conf {

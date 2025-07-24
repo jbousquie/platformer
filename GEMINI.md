@@ -14,6 +14,13 @@ The project almost follows the tutorial steps here : https://mq.agical.se/index.
 So I don't implement the game all at once, but rather in small, manageable steps under the guidance of the developer.
 I carefully read the Macroquad documentation here : https://macroquad.rs/docs/
 
+## Game Mechanics
+
+### Item Grabbing
+The player can grab and release items in the game world.
+- **Grab**: If the player collides with an item and presses the `SPACE` key, the player "grabs" the item. The item becomes "hooked" to the player's side, following their movements.
+- **Release**: If the player is holding an item and presses the `SPACE` key again, the item is released and resumes its normal physical behavior.
+
 ## Project Structure
 
 The project is organized into several modules, each responsible for a specific part of the game's functionality:
@@ -21,9 +28,10 @@ The project is organized into several modules, each responsible for a specific p
 - **`main.rs`**: The entry point of the application. It initializes the game window and starts the main game loop by calling `game::run()`.
 - **`game.rs`**: Contains the core game loop. It manages the main game state, including the player, level, and camera. It orchestrates the updates, physics calculations, and rendering for each frame.
 - **`player.rs`**: Defines the `Player` character. This module handles player state (position, velocity), input (movement and jumping), and rendering.
-- **`level.rs`**: Defines the game world's structure. It procedurally generates the level layout, including platforms and boundaries (ground, ceiling, walls).
-- **`physics.rs`**: Handles collision detection and resolution. It prevents the player from moving through level boundaries and platforms.
+- **`items.rs`**: Defines the `Item` struct and its behavior, including being grabbed and released by the player.
+- **`level.rs`**: Defines the game world's structure. It procedurally generates the level layout, including platforms, boundaries, and spawning items.
+- **`physics.rs`**: Handles collision detection and resolution for the player and items against the level.
 - **`camera.rs`**: Manages the game camera. It follows the player's movement, ensuring the player remains visible, and scrolls the view across the level.
-- **`constants.rs`**: A central file for storing global game parameters like player speed, gravity, and jump force, making them easy to adjust.
+- **`constants.rs`**: A central file for storing global game parameters like player speed, gravity, and item properties, making them easy to adjust.
 - **`Cargo.toml`**: The package manifest for the Rust project. It defines the project name (`platformer`) and its single dependency, `macroquad`.
 - **`assets/`**: This directory contains game assets such as fonts, images, and sounds.
