@@ -1,3 +1,7 @@
+//! Main Module
+//!
+//! This is the entry point of the platformer game.
+
 mod constants;
 mod camera;
 mod physics;
@@ -5,6 +9,7 @@ mod game;
 mod level;
 mod player;
 
+/// Configures the game window.
 fn window_conf() -> macroquad::prelude::Conf {
     macroquad::prelude::Conf {
         window_title: "Platformer".to_owned(),
@@ -13,6 +18,7 @@ fn window_conf() -> macroquad::prelude::Conf {
     }
 }
 
+/// The entry point of the application.
 #[macroquad::main(window_conf)]
 async fn main() {
     game::run().await;

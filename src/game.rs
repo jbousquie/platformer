@@ -1,9 +1,14 @@
+//! Game Module
+//!
+//! This module contains the main game loop and game state management.
+
 use crate::camera::Camera;
 use crate::level::Level;
 use crate::physics;
 use crate::player::Player;
 use macroquad::prelude::*;
 
+/// Runs the main game loop.
 pub async fn run() {
     let mut player = Player::new();
     let level = Level::new();

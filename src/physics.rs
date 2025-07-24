@@ -1,6 +1,11 @@
+//! Physics Module
+//!
+//! This module handles collision detection and resolution.
+
 use crate::level::Level;
 use crate::player::Player;
 
+/// Resolves collisions between the player and the level, including boundaries and platforms.
 pub fn resolve_collisions(player: &mut Player, level: &Level) {
     player.on_ground = false;
     let player_rect = player.rect();

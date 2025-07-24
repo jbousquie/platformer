@@ -1,9 +1,14 @@
+//! Level Module
+//!
+//! This module defines the game world's structure and layout.
+
 use macroquad::prelude::*;
 use crate::constants::*;
 
 pub const LEVEL_WIDTH: f32 = 3. * 1024.;
 pub const LEVEL_HEIGHT: f32 = 3. * 768.;
 
+/// Represents the game level, including its boundaries and platforms.
 pub struct Level {
     pub ground: Rect,
     pub ceiling: Rect,
@@ -13,6 +18,7 @@ pub struct Level {
 }
 
 impl Level {
+    /// Creates a new level instance, populating it with platforms and defining its boundaries.
     pub fn new() -> Self {
         let mut platforms = vec![];
         let screen_width = 1024.;
@@ -50,6 +56,7 @@ impl Level {
         }
     }
 
+    /// Draws the level, including boundaries and platforms.
     pub fn draw(&self) {
         // Draw bounds
         draw_rectangle(self.ground.x, self.ground.y, self.ground.w, self.ground.h, YELLOW);

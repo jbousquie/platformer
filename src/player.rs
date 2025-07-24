@@ -1,7 +1,12 @@
+//! Player Module
+//!
+//! This module defines the player's behavior and properties.
+
 use macroquad::prelude::*;
 use crate::constants::{PLAYER_SIZE, PLAYER_SPEED, JUMP_FORCE, GRAVITY, GROUND_HEIGHT};
 use crate::level::LEVEL_HEIGHT;
 
+/// Represents the different states the player can be in.
 pub enum PlayerState {
     Idle,
     Run,
@@ -9,6 +14,7 @@ pub enum PlayerState {
     Fall,
 }
 
+/// Represents the player character in the game.
 pub struct Player {
     pub position: Vec2,
     pub size: Vec2,
@@ -18,6 +24,7 @@ pub struct Player {
 }
 
 impl Player {
+    /// Creates a new player instance with default values.
     pub fn new() -> Self {
         Self {
             position: vec2(100., LEVEL_HEIGHT - GROUND_HEIGHT - PLAYER_SIZE),
@@ -28,10 +35,12 @@ impl Player {
         }
     }
 
+    /// Returns the player's bounding box as a `Rect`.
     pub fn rect(&self) -> Rect {
         Rect::new(self.position.x, self.position.y, self.size.x, self.size.y)
     }
 
+    /// Updates the player's state, including position, velocity, and state, based on input and physics.
     pub fn update(&mut self, dt: f32) {
         // Apply gravity
         self.velocity.y += GRAVITY * dt;
@@ -69,6 +78,7 @@ impl Player {
         }
     }
 
+    /// Draws the player on the screen.
     pub fn draw(&self) {
         draw_rectangle(self.position.x, self.position.y, self.size.x, self.size.y, WHITE);
     }

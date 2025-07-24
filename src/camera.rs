@@ -1,13 +1,19 @@
+//! Camera Module
+//!
+//! This module defines the camera that follows the player.
+
 use crate::constants::{SCREEN_QUARTER_HEIGHT_FACTOR, SCREEN_QUARTER_WIDTH_FACTOR};
 use crate::level::{LEVEL_HEIGHT, LEVEL_WIDTH};
 use crate::player::Player;
 use macroquad::prelude::*;
 
+/// Represents the game camera, which follows the player.
 pub struct Camera {
     pub rect: Rect,
 }
 
 impl Camera {
+    /// Creates a new camera instance.
     pub fn new() -> Self {
         Self {
             rect: Rect::new(
@@ -19,6 +25,7 @@ impl Camera {
         }
     }
 
+    /// Updates the camera's position to follow the player, clamping it to the level bounds.
     pub fn update(&mut self, player: &Player) {
         let screen_quarter_w = screen_width() * SCREEN_QUARTER_WIDTH_FACTOR;
         let screen_quarter_h = screen_height() * SCREEN_QUARTER_HEIGHT_FACTOR;
