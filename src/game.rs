@@ -1,8 +1,8 @@
-use macroquad::prelude::*;
-use crate::player::Player;
-use crate::level::Level;
 use crate::camera::Camera;
+use crate::level::Level;
 use crate::physics;
+use crate::player::Player;
+use macroquad::prelude::*;
 
 pub async fn run() {
     let mut player = Player::new();
@@ -21,7 +21,10 @@ pub async fn run() {
         clear_background(BLACK);
 
         set_camera(&macroquad::prelude::Camera2D {
-            target: vec2(camera.rect.x + camera.rect.w / 2., camera.rect.y + camera.rect.h / 2.),
+            target: vec2(
+                camera.rect.x + camera.rect.w / 2.,
+                camera.rect.y + camera.rect.h / 2.,
+            ),
             zoom: vec2(1. / camera.rect.w, 1. / camera.rect.h),
             ..Default::default()
         });

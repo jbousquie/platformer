@@ -1,4 +1,4 @@
-use crate::constants::{SCREEN_QUARTER_HEIGHT_FACTOR, SCREEN_QUARTER_WIDTH_FACTOR, WALL_WIDTH};
+use crate::constants::{SCREEN_QUARTER_HEIGHT_FACTOR, SCREEN_QUARTER_WIDTH_FACTOR};
 use crate::level::{LEVEL_HEIGHT, LEVEL_WIDTH};
 use crate::player::Player;
 use macroquad::prelude::*;
@@ -22,27 +22,27 @@ impl Camera {
     pub fn update(&mut self, player: &Player) {
         let screen_quarter_w = screen_width() * SCREEN_QUARTER_WIDTH_FACTOR;
         let screen_quarter_h = screen_height() * SCREEN_QUARTER_HEIGHT_FACTOR;
+        let player_rect = player.rect();
 
         // Scroll left
-        if player.rect.x < self.rect.x - screen_quarter_w {
-            self.rect.x = player.rect.x + screen_quarter_w;
+        if player_rect.x < self.rect.x - screen_quarter_w {
+            self.rect.x = player_rect.x + screen_quarter_w;
         }
-        println!("{}  {}", self.rect.x, player.rect.x);
         // Scroll right
-        if player.rect.right() > self.rect.right() + screen_quarter_w
+        if player_rect.right() > self.rect.right() + screen_quarter_w
             && self.rect.right() < LEVEL_WIDTH
         {
-            self.rect.x = player.rect.right() - self.rect.w - screen_quarter_w;
+            self.rect.x = player_rect.right() - self.rect.w - screen_quarter_w;
         }
         // Scroll up
-        if player.rect.y < self.rect.y + screen_quarter_h && self.rect.y > 0. {
-            self.rect.y = player.rect.y - screen_quarter_h;
+        if player_rect.y < self.rect.y + screen_quarter_h && self.rect.y > 0. {
+            self.rect.y = player_rect.y - screen_quarter_h;
         }
         // Scroll down
-        if player.rect.bottom() > self.rect.bottom() - screen_quarter_h
+        if player_rect.bottom() > self.rect.bottom() - screen_quarter_h
             && self.rect.bottom() < LEVEL_HEIGHT
         {
-            self.rect.y = player.rect.bottom() - self.rect.h + screen_quarter_h;
+            self.rect.y = player_rect.bottom() - self.rect.h + screen_quarter_h;
         }
 
         // Clamp camera to level bounds

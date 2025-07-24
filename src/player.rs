@@ -2,24 +2,34 @@ use macroquad::prelude::*;
 use crate::constants::{PLAYER_SIZE, PLAYER_SPEED, JUMP_FORCE, GRAVITY, GROUND_HEIGHT};
 use crate::level::LEVEL_HEIGHT;
 
+pub enum PlayerState {
+    Idle,
+    Run,
+    Jump,
+    Fall,
+}
+
 pub struct Player {
-    pub rect: Rect,
+    pub position: Vec2,
+    pub size: Vec2,
     pub velocity: Vec2,
     pub on_ground: bool,
+    pub state: PlayerState,
 }
 
 impl Player {
     pub fn new() -> Self {
         Self {
-            rect: Rect::new(
-                100.,
-                LEVEL_HEIGHT - GROUND_HEIGHT - PLAYER_SIZE,
-                PLAYER_SIZE,
-                PLAYER_SIZE,
-            ),
+            position: vec2(100., LEVEL_HEIGHT - GROUND_HEIGHT - PLAYER_SIZE),
+            size: vec2(PLAYER_SIZE, PLAYER_SIZE),
             velocity: Vec2::new(0., 0.),
             on_ground: false,
+            state: PlayerState::Idle,
         }
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(self.position.x, self.position.y, self.size.x, self.size.y)
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -41,11 +51,25 @@ impl Player {
         }
 
         // Update position
-        self.rect.x += self.velocity.x * dt;
-        self.rect.y += self.velocity.y * dt;
+        self.position += self.velocity * dt;
+
+        // Update state
+        if self.on_ground {
+            if self.velocity.x.abs() > 0.1 {
+                self.state = PlayerState::Run;
+            } else {
+                self.state = PlayerState::Idle;
+            }
+        } else {
+            if self.velocity.y < 0. {
+                self.state = PlayerState::Jump;
+            } else {
+                self.state = PlayerState::Fall;
+            }
+        }
     }
 
     pub fn draw(&self) {
-        draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, WHITE);
+        draw_rectangle(self.position.x, self.position.y, self.size.x, self.size.y, WHITE);
     }
 }
