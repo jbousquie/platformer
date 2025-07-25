@@ -16,11 +16,11 @@ I carefully read the Macroquad documentation here : https://macroquad.rs/docs/
 
 ## Game Mechanics
 
-### Item Grabbing and Throwing
-The player can grab, release, and throw items in the game world.
-- **Grab**: If the player collides with an item and presses the `SPACE` key, the player "grabs" the item. The item becomes "hooked" to the player's side, following their movements.
-- **Release**: If the player is holding an item and presses the `SPACE` key again, the item is released and resumes its normal physical behavior.
-- **Throw**: If the player is holding an item and presses the `B` key, the item is thrown in the direction the player is facing. It follows a parabolic trajectory and bounces off surfaces until it comes to a stop.
+### Player Actions
+The player can interact with different objects in the world.
+
+- **Items**: Can be grabbed (`SPACE`), released (`SPACE`), and thrown (`B`). Thrown items bounce off surfaces.
+- **Blocks**: Can be grabbed (`SPACE`) and released (`SPACE`). They are not throwable. Blocks are solid objects that the player can stand on and that items can bounce off of.
 
 ## Project Structure
 
@@ -29,9 +29,10 @@ The project is organized into several modules, each responsible for a specific p
 - **`main.rs`**: The entry point of the application. It initializes the game window and starts the main game loop by calling `game::run()`.
 - **`game.rs`**: Contains the core game loop. It manages the main game state, including the player, level, and camera. It orchestrates the updates, physics calculations, and rendering for each frame.
 - **`player.rs`**: Defines the `Player` character. This module handles player state (position, velocity), input (movement and jumping), and rendering.
-- **`items.rs`**: Defines the `Item` struct and its behavior, including being grabbed and released by the player.
-- **`level.rs`**: Defines the game world's structure. It procedurally generates the level layout, including platforms, boundaries, and spawning items.
-- **`physics.rs`**: Handles collision detection and resolution for the player and items against the level.
+- **`items.rs`**: Defines the `Item` struct and its behavior.
+- **`blocks.rs`**: Defines the `Block` struct and its behavior.
+- **`level.rs`**: Defines the game world's structure. It procedurally generates the level layout, including platforms, boundaries, and spawning items and blocks.
+- **`physics.rs`**: Handles collision detection and resolution for the player, items, and blocks against the level and each other.
 - **`camera.rs`**: Manages the game camera. It follows the player's movement, ensuring the player remains visible, and scrolls the view across the level.
 - **`constants.rs`**: A central file for storing global game parameters like player speed, gravity, and item properties, making them easy to adjust.
 - **`Cargo.toml`**: The package manifest for the Rust project. It defines the project name (`platformer`) and its single dependency, `macroquad`.

@@ -8,8 +8,8 @@ A attempt to create a platformer game using Rust and [macroquad](https://github.
 
 -   **Move Left/Right**: Use the Left and Right arrow keys.
 -   **Jump**: Press the Up arrow key.
--   **Grab/Release Items**: Press the `SPACE` key to grab a nearby item or release a held item.
--   **Throw Items**: While holding an item, press the `B` key to throw it.
+-   **Grab/Release Objects**: Press the `SPACE` key to grab a nearby item or block, or to release one you are holding.
+-   **Throw Items**: While holding an item, press the `B` key to throw it. Blocks cannot be thrown.
 
 ## License & Credits
 
