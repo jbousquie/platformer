@@ -13,3 +13,6 @@ pub const CEILING_HEIGHT: f32 = 50.;
 pub const WALL_WIDTH: f32 = 50.;
 pub const ITEM_SIZE: f32 = 25.0;
 pub const ITEM_COUNT: usize = 12;
+pub const ITEM_THROW_SPEED: f32 = 600.0;
+pub const ITEM_BOUNCE_ENERGY_LOSS: f32 = 0.7;
+pub const ITEM_MIN_BOUNCE_SPEED: f32 = 60.0;

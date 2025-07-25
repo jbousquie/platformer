@@ -2,10 +2,17 @@
 //!
 //! This module defines the items that appear in the game world.
 
-use crate::constants::{GRAVITY, ITEM_SIZE};
+use crate::constants::{GRAVITY, ITEM_SIZE, ITEM_THROW_SPEED};
 use crate::physics;
 use crate::player::Player;
 use macroquad::prelude::*;
+
+/// Represents the state of an item.
+pub enum ItemState {
+    Idle,
+    Hooked,
+    Thrown,
+}
 
 /// Represents an item in the game world.
 pub struct Item {
@@ -13,7 +20,7 @@ pub struct Item {
     pub size: Vec2,
     pub velocity: Vec2,
     pub on_ground: bool,
-    pub grabbed: bool,
+    pub state: ItemState,
 }
 
 impl Item {
@@ -24,7 +31,7 @@ impl Item {
             size: vec2(ITEM_SIZE, ITEM_SIZE),
             velocity: Vec2::ZERO,
             on_ground: false,
-            grabbed: false,
+            state: ItemState::Idle,
         }
     }
 
@@ -33,9 +40,9 @@ impl Item {
         Rect::new(self.position.x, self.position.y, self.size.x, self.size.y)
     }
 
-    /// Updates the item's state, applying gravity only if it's not grabbed.
+    /// Updates the item's state, applying gravity only if it's not on the ground.
     pub fn update(&mut self, dt: f32) {
-        if !self.grabbed {
+        if !self.on_ground {
             self.velocity.y += GRAVITY * dt;
             self.position += self.velocity * dt;
         }
@@ -43,7 +50,11 @@ impl Item {
 
     /// Draws the item on the screen.
     pub fn draw(&self) {
-        let color = if self.grabbed { YELLOW } else { BLUE };
+        let color = match self.state {
+            ItemState::Idle => BLUE,
+            ItemState::Hooked => YELLOW,
+            ItemState::Thrown => RED,
+        };
         draw_rectangle(
             self.position.x,
             self.position.y,
@@ -57,42 +68,50 @@ impl Item {
 /// Handles all item-related logic for a frame, including grab/release, physics, and position updates.
 pub fn process_items(
     items: &mut [Item],
-    player: &Player,
+    player: &mut Player,
     ground: &Rect,
     platforms: &[Rect],
+    left_wall: &Rect,
+    right_wall: &Rect,
     dt: f32,
 ) {
     let player_rect = player.rect();
     let space_pressed = is_key_pressed(KeyCode::Space);
+    let b_pressed = is_key_pressed(KeyCode::B);
 
-    // Handle grab/release action, which is a single event per key press.
-    if space_pressed {
-        let mut action_taken = false;
-        // First, try to release a grabbed item.
-        for item in items.iter_mut() {
-            if item.grabbed {
-                item.grabbed = false;
-                action_taken = true;
-                break; // Only release one item per press.
-            }
+    // Handle actions for a held item (release or throw)
+    if let Some(held_item_index) = player.held_item_index {
+        let held_item = &mut items[held_item_index];
+
+        if space_pressed {
+            held_item.state = ItemState::Idle;
+            held_item.on_ground = false;
+            player.held_item_index = None;
+        } else if b_pressed {
+            held_item.state = ItemState::Thrown;
+            held_item.on_ground = false;
+            let direction = if player.facing_right { 1.0 } else { -1.0 };
+            held_item.velocity = vec2(direction, -1.0).normalize() * ITEM_THROW_SPEED;
+            player.held_item_index = None;
         }
-
-        // If no item was released, try to grab a new one.
-        if !action_taken {
-            for item in items.iter_mut() {
-                if !item.grabbed && player_rect.overlaps(&item.rect()) {
-                    item.grabbed = true;
+    } else if space_pressed {
+        // Handle grabbing a new item
+        for (i, item) in items.iter_mut().enumerate() {
+            if let ItemState::Idle = item.state {
+                if player_rect.overlaps(&item.rect()) {
+                    item.state = ItemState::Hooked;
                     item.velocity = Vec2::ZERO;
-                    break; // Only grab one item per press.
+                    player.held_item_index = Some(i);
+                    break;
                 }
             }
         }
     }
 
-    // Update position and state of all items.
-    for item in items.iter_mut() {
-        if item.grabbed {
-            // Item is hooked to the player.
+    // Update position and state of all items
+    for (i, item) in items.iter_mut().enumerate() {
+        if player.held_item_index == Some(i) {
+            // Item is hooked to the player
             item.position.y = player.position.y;
             if player.facing_right {
                 item.position.x = player.position.x + player.size.x;
@@ -100,9 +119,27 @@ pub fn process_items(
                 item.position.x = player.position.x - item.size.x;
             }
         } else {
-            // Item is not grabbed, apply normal physics.
-            item.update(dt);
-            physics::resolve_item_collisions(item, ground, platforms);
+            // Item is not hooked, apply physics
+            match item.state {
+                ItemState::Idle | ItemState::Thrown => {
+                    // Only update and check for collisions if the item is not already settled on the ground.
+                    if !item.on_ground {
+                        item.update(dt);
+                        physics::resolve_item_collisions(
+                            item,
+                            ground,
+                            platforms,
+                            left_wall,
+                            right_wall,
+                        );
+                    }
+                }
+                ItemState::Hooked => {
+                    // This item should not be hooked if it's not the one the player is holding.
+                    // Reset its state to be safe.
+                    item.state = ItemState::Idle;
+                }
+            }
         }
     }
 }

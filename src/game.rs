@@ -23,9 +23,11 @@ pub async fn run() {
         physics::resolve_player_collisions(&mut player, &level);
         items::process_items(
             &mut level.items,
-            &player,
+            &mut player,
             &level.ground,
             &level.platforms,
+            &level.left_wall,
+            &level.right_wall,
             dt,
         );
 

@@ -16,10 +16,11 @@ I carefully read the Macroquad documentation here : https://macroquad.rs/docs/
 
 ## Game Mechanics
 
-### Item Grabbing
-The player can grab and release items in the game world.
+### Item Grabbing and Throwing
+The player can grab, release, and throw items in the game world.
 - **Grab**: If the player collides with an item and presses the `SPACE` key, the player "grabs" the item. The item becomes "hooked" to the player's side, following their movements.
 - **Release**: If the player is holding an item and presses the `SPACE` key again, the item is released and resumes its normal physical behavior.
+- **Throw**: If the player is holding an item and presses the `B` key, the item is thrown in the direction the player is facing. It follows a parabolic trajectory and bounces off surfaces until it comes to a stop.
 
 ## Project Structure
 

@@ -22,6 +22,7 @@ pub struct Player {
     pub on_ground: bool,
     pub state: PlayerState,
     pub facing_right: bool,
+    pub held_item_index: Option<usize>,
 }
 
 impl Player {
@@ -34,6 +35,7 @@ impl Player {
             on_ground: false,
             state: PlayerState::Idle,
             facing_right: true,
+            held_item_index: None,
         }
     }
 

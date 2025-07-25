@@ -2,10 +2,11 @@
 //!
 //! This module handles collision detection and resolution.
 
-use crate::items::Item;
+use crate::constants::{ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED};
+use crate::items::{Item, ItemState};
 use crate::level::Level;
 use crate::player::Player;
-use macroquad::prelude::{get_frame_time, Rect};
+use macroquad::prelude::{get_frame_time, Rect, Vec2};
 
 /// Resolves collisions between the player and the level, including boundaries and platforms.
 pub fn resolve_player_collisions(player: &mut Player, level: &Level) {
@@ -50,33 +51,57 @@ pub fn resolve_player_collisions(player: &mut Player, level: &Level) {
 }
 
 /// Resolves collisions for a single item with the level.
-pub fn resolve_item_collisions(item: &mut Item, ground: &Rect, platforms: &[Rect]) {
+pub fn resolve_item_collisions(
+    item: &mut Item,
+    ground: &Rect,
+    platforms: &[Rect],
+    left_wall: &Rect,
+    right_wall: &Rect,
+) {
     item.on_ground = false;
     let item_rect = item.rect();
 
-    // Item vs. Level ground
-    if item_rect.overlaps(ground) {
-        if item.velocity.y > 0. {
-            item.position.y = ground.y - item.size.y;
-            item.velocity.y = 0.;
-            item.on_ground = true;
-        }
+    // Item vs. Walls
+    if item_rect.overlaps(left_wall) {
+        item.position.x = left_wall.right();
+        item.velocity.x = -item.velocity.x;
+    }
+    if item_rect.overlaps(right_wall) {
+        item.position.x = right_wall.left() - item.size.x;
+        item.velocity.x = -item.velocity.x;
     }
 
-    // Item vs. Platforms
-    if item.velocity.y > 0. {
-        for platform in platforms {
-            let item_rect = item.rect();
+    // Item vs. Ground and Platforms
+    let mut colliders = vec![*ground];
+    colliders.extend_from_slice(platforms);
+
+    if item.velocity.y >= 0. {
+        for platform in &colliders {
             if item_rect.overlaps(platform) {
                 let previous_item_bottom =
                     item.position.y + item.size.y - item.velocity.y * get_frame_time();
                 if previous_item_bottom <= platform.y {
-                    item.position.y = platform.y - item.size.y;
-                    item.velocity.y = 0.;
-                    item.on_ground = true;
+                    // Collision detected
+                    if let ItemState::Thrown = item.state {
+                        if item.velocity.length() > ITEM_MIN_BOUNCE_SPEED {
+                            item.position.y = platform.y - item.size.y;
+                            item.velocity.y = -item.velocity.y * ITEM_BOUNCE_ENERGY_LOSS;
+                            // Also apply friction to horizontal movement
+                            item.velocity.x *= 1.0 - ITEM_BOUNCE_ENERGY_LOSS;
+                        } else {
+                            item.state = ItemState::Idle;
+                            item.on_ground = true;
+                            item.velocity = Vec2::ZERO;
+                            item.position.y = platform.y - item.size.y;
+                        }
+                    } else {
+                        item.on_ground = true;
+                        item.velocity = Vec2::ZERO;
+                        item.position.y = platform.y - item.size.y;
+                    }
+                    return;
                 }
             }
         }
     }
 }
-
