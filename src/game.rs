@@ -2,11 +2,13 @@
 //!
 //! This module contains the main game loop and game state management.
 
+use crate::blocks::{Block, BlockState};
 use crate::camera::Camera;
-use crate::items;
+use crate::constants::ITEM_THROW_SPEED;
+use crate::items::{Item, ItemState};
 use crate::level::Level;
 use crate::physics;
-use crate::player::Player;
+use crate::player::{HeldObject, Player};
 use macroquad::prelude::*;
 
 /// Runs the main game loop.
@@ -20,16 +22,48 @@ pub async fn run() {
 
         // Update
         player.update(dt);
-        physics::resolve_player_collisions(&mut player, &level);
-        items::process_items(
-            &mut level.items,
-            &mut player,
+        process_interactions(&mut player, &mut level.items, &mut level.blocks);
+
+        let (platforms, blocks, ground, left_wall, right_wall, ceiling) = (
+            level.platforms.as_slice(),
+            level.blocks.as_slice(),
             &level.ground,
-            &level.platforms,
             &level.left_wall,
             &level.right_wall,
-            dt,
+            &level.ceiling,
         );
+
+        physics::resolve_player_collisions(&mut player, platforms, blocks, ground, left_wall, right_wall, ceiling);
+
+        // Update items
+        for item in level.items.iter_mut() {
+            if item.state != ItemState::Hooked {
+                if !item.on_ground {
+                    item.update(dt);
+                    physics::resolve_item_collisions(item, platforms, blocks, ground, left_wall, right_wall);
+                }
+            } else {
+                // This state should be handled by process_interactions, but as a fallback
+                if player.held_object.is_none() {
+                    item.state = ItemState::Idle;
+                }
+            }
+        }
+
+        // Update blocks
+        let all_blocks = level.blocks.clone();
+        for (i, block) in level.blocks.iter_mut().enumerate() {
+            if block.state != BlockState::Hooked {
+                if !block.on_ground {
+                    block.update(dt);
+                    physics::resolve_block_collisions(block, i, platforms, &all_blocks, ground, left_wall, right_wall);
+                }
+            } else {
+                if player.held_object.is_none() {
+                    block.state = BlockState::Idle;
+                }
+            }
+        }
 
         camera.update(&player);
 
@@ -51,5 +85,82 @@ pub async fn run() {
         set_default_camera();
 
         next_frame().await
+    }
+}
+
+/// Handles player interactions with items and blocks (grabbing, dropping, throwing).
+fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [Block]) {
+    let space_pressed = is_key_pressed(KeyCode::Space);
+    let b_pressed = is_key_pressed(KeyCode::B);
+
+    match player.held_object {
+        Some(HeldObject::Item(idx)) => {
+            let item = &mut items[idx];
+            if space_pressed {
+                item.state = ItemState::Idle;
+                item.on_ground = false;
+                player.held_object = None;
+            } else if b_pressed {
+                item.state = ItemState::Thrown;
+                item.on_ground = false;
+                let dir = if player.facing_right { 1.0 } else { -1.0 };
+                item.velocity = vec2(dir, -1.0).normalize() * ITEM_THROW_SPEED;
+                player.held_object = None;
+            } else {
+                // Keep item hooked to player
+                item.position.y = player.position.y;
+                item.position.x = if player.facing_right {
+                    player.position.x + player.size.x
+                } else {
+                    player.position.x - item.size.x
+                };
+            }
+        }
+        Some(HeldObject::Block(idx)) => {
+            let block = &mut blocks[idx];
+            if space_pressed {
+                block.state = BlockState::Idle;
+                block.on_ground = false;
+                player.held_object = None;
+            } else {
+                // Keep block hooked to player
+                block.position.y = player.position.y;
+                block.position.x = if player.facing_right {
+                    player.position.x + player.size.x
+                } else {
+                    player.position.x - block.size.x
+                };
+            }
+        }
+        None => {
+            // Try to grab an object
+            if space_pressed {
+                let player_rect = player.rect();
+                // Prioritize grabbing blocks
+                for (i, block) in blocks.iter_mut().enumerate() {
+                    // Player cannot grab a block they are standing on.
+                    let player_is_on_block = player.on_ground
+                        && player.rect().bottom() >= block.rect().top()
+                        && player.rect().bottom() <= block.rect().top() + 1.0 // Tolerance
+                        && player_rect.overlaps(&block.rect());
+
+                    if !player_is_on_block && block.state == BlockState::Idle && player_rect.overlaps(&block.rect()) {
+                        block.state = BlockState::Hooked;
+                        block.velocity = Vec2::ZERO;
+                        player.held_object = Some(HeldObject::Block(i));
+                        return; // Exit after grabbing one object
+                    }
+                }
+                // If no block was grabbed, try to grab an item
+                for (i, item) in items.iter_mut().enumerate() {
+                    if item.state == ItemState::Idle && player_rect.overlaps(&item.rect()) {
+                        item.state = ItemState::Hooked;
+                        item.velocity = Vec2::ZERO;
+                        player.held_object = Some(HeldObject::Item(i));
+                        return; // Exit after grabbing one object
+                    }
+                }
+            }
+        }
     }
 }

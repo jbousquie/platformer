@@ -2,46 +2,47 @@
 //!
 //! This module handles collision detection and resolution.
 
+use crate::blocks::{Block, BlockState};
 use crate::constants::{ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED};
 use crate::items::{Item, ItemState};
-use crate::level::Level;
 use crate::player::Player;
 use macroquad::prelude::{get_frame_time, Rect, Vec2};
 
-/// Resolves collisions between the player and the level, including boundaries and platforms.
-pub fn resolve_player_collisions(player: &mut Player, level: &Level) {
+/// Resolves collisions between the player and the level, including boundaries, platforms, and blocks.
+pub fn resolve_player_collisions(player: &mut Player, platforms: &[Rect], blocks: &[Block], ground: &Rect, left_wall: &Rect, right_wall: &Rect, ceiling: &Rect) {
     player.on_ground = false;
     let player_rect = player.rect();
 
     // Player vs. Level bounds
-    if player_rect.overlaps(&level.left_wall) {
-        player.position.x = level.left_wall.right();
+    if player_rect.overlaps(left_wall) {
+        player.position.x = left_wall.right();
     }
-    if player_rect.overlaps(&level.right_wall) {
-        player.position.x = level.right_wall.left() - player.size.x;
+    if player_rect.overlaps(right_wall) {
+        player.position.x = right_wall.left() - player.size.x;
     }
-    if player_rect.overlaps(&level.ceiling) {
-        player.position.y = level.ceiling.bottom();
+    if player_rect.overlaps(ceiling) {
+        player.position.y = ceiling.bottom();
         player.velocity.y = 0.;
     }
-    if player_rect.overlaps(&level.ground) {
-        if player.velocity.y > 0. {
-            player.position.y = level.ground.y - player.size.y;
-            player.velocity.y = 0.;
-            player.on_ground = true;
+
+    // Create a list of all solid surfaces for the player to land on
+    let mut surfaces = platforms.to_vec();
+    surfaces.push(*ground);
+    for block in blocks {
+        if block.state == BlockState::Idle {
+            surfaces.push(block.rect());
         }
     }
 
-    // Player vs. Platforms
-    if player.velocity.y > 0. {
-        for platform in &level.platforms {
+    // Player vs. Surfaces (Ground, Platforms, Blocks)
+    if player.velocity.y >= 0. {
+        for surface in &surfaces {
             let player_rect = player.rect();
-            if player_rect.overlaps(platform) {
-                // Check if the player's bottom edge was above the platform's top edge in the previous frame
+            if player_rect.overlaps(surface) {
                 let previous_player_bottom =
                     player.position.y + player.size.y - player.velocity.y * get_frame_time();
-                if previous_player_bottom <= platform.y {
-                    player.position.y = platform.y - player.size.y;
+                if previous_player_bottom <= surface.y {
+                    player.position.y = surface.y - player.size.y;
                     player.velocity.y = 0.;
                     player.on_ground = true;
                 }
@@ -50,14 +51,8 @@ pub fn resolve_player_collisions(player: &mut Player, level: &Level) {
     }
 }
 
-/// Resolves collisions for a single item with the level.
-pub fn resolve_item_collisions(
-    item: &mut Item,
-    ground: &Rect,
-    platforms: &[Rect],
-    left_wall: &Rect,
-    right_wall: &Rect,
-) {
+/// Resolves collisions for a single item with the level and blocks.
+pub fn resolve_item_collisions(item: &mut Item, platforms: &[Rect], blocks: &[Block], ground: &Rect, left_wall: &Rect, right_wall: &Rect) {
     item.on_ground = false;
     let item_rect = item.rect();
 
@@ -71,34 +66,84 @@ pub fn resolve_item_collisions(
         item.velocity.x = -item.velocity.x;
     }
 
-    // Item vs. Ground and Platforms
-    let mut colliders = vec![*ground];
-    colliders.extend_from_slice(platforms);
+    // Combine all solid objects for collision detection
+    let mut colliders = platforms.to_vec();
+    colliders.push(*ground);
+    for block in blocks {
+        if block.state == BlockState::Idle {
+            colliders.push(block.rect());
+        }
+    }
 
-    if item.velocity.y >= 0. {
-        for platform in &colliders {
-            if item_rect.overlaps(platform) {
+    // Item vs. Surfaces (Ground, Platforms, Blocks)
+    for surface in &colliders {
+        if item_rect.overlaps(surface) {
+            if item.velocity.y >= 0. {
                 let previous_item_bottom =
                     item.position.y + item.size.y - item.velocity.y * get_frame_time();
-                if previous_item_bottom <= platform.y {
-                    // Collision detected
+                if previous_item_bottom <= surface.y {
+                    // Collision from above
                     if let ItemState::Thrown = item.state {
                         if item.velocity.length() > ITEM_MIN_BOUNCE_SPEED {
-                            item.position.y = platform.y - item.size.y;
+                            item.position.y = surface.y - item.size.y;
                             item.velocity.y = -item.velocity.y * ITEM_BOUNCE_ENERGY_LOSS;
-                            // Also apply friction to horizontal movement
                             item.velocity.x *= 1.0 - ITEM_BOUNCE_ENERGY_LOSS;
                         } else {
                             item.state = ItemState::Idle;
                             item.on_ground = true;
                             item.velocity = Vec2::ZERO;
-                            item.position.y = platform.y - item.size.y;
+                            item.position.y = surface.y - item.size.y;
                         }
                     } else {
                         item.on_ground = true;
                         item.velocity = Vec2::ZERO;
-                        item.position.y = platform.y - item.size.y;
+                        item.position.y = surface.y - item.size.y;
                     }
+                    return;
+                }
+            }
+            if item_rect.overlaps(surface) {
+                item.velocity.x = -item.velocity.x * ITEM_BOUNCE_ENERGY_LOSS;
+                return;
+            }
+        }
+    }
+}
+
+/// Resolves collisions for a single block with the level and other blocks.
+pub fn resolve_block_collisions(block: &mut Block, block_idx: usize, platforms: &[Rect], all_blocks: &[Block], ground: &Rect, left_wall: &Rect, right_wall: &Rect) {
+    block.on_ground = false;
+    let block_rect = block.rect();
+
+    // Block vs. Walls
+    if block_rect.overlaps(left_wall) {
+        block.position.x = left_wall.right();
+        block.velocity.x = 0.;
+    }
+    if block_rect.overlaps(right_wall) {
+        block.position.x = right_wall.left() - block.size.x;
+        block.velocity.x = 0.;
+    }
+
+    // Combine all other solid objects for collision
+    let mut colliders = platforms.to_vec();
+    colliders.push(*ground);
+    for (i, other_block) in all_blocks.iter().enumerate() {
+        if i != block_idx && other_block.state == BlockState::Idle {
+            colliders.push(other_block.rect());
+        }
+    }
+
+    // Block vs. Surfaces (Ground, Platforms, other Blocks)
+    if block.velocity.y >= 0. {
+        for surface in &colliders {
+            if block.rect().overlaps(surface) {
+                let previous_block_bottom =
+                    block.position.y + block.size.y - block.velocity.y * get_frame_time();
+                if previous_block_bottom <= surface.y {
+                    block.position.y = surface.y - block.size.y;
+                    block.velocity = Vec2::ZERO;
+                    block.on_ground = true;
                     return;
                 }
             }

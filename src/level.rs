@@ -2,6 +2,7 @@
 //!
 //! This module defines the game world's structure and layout.
 
+use crate::blocks::Block;
 use crate::constants::*;
 use crate::items::Item;
 use macroquad::prelude::*;
@@ -18,6 +19,7 @@ pub struct Level {
     pub right_wall: Rect,
     pub platforms: Vec<Rect>,
     pub items: Vec<Item>,
+    pub blocks: Vec<Block>,
 }
 
 impl Level {
@@ -60,6 +62,14 @@ impl Level {
             )));
         }
 
+        let mut blocks = vec![];
+        for _ in 0..BLOCK_COUNT {
+            blocks.push(Block::new(vec2(
+                rand::gen_range(WALL_WIDTH, LEVEL_WIDTH - WALL_WIDTH - BLOCK_SIZE),
+                rand::gen_range(CEILING_HEIGHT, LEVEL_HEIGHT - GROUND_HEIGHT - BLOCK_SIZE),
+            )));
+        }
+
         Self {
             ground: Rect::new(0., LEVEL_HEIGHT - GROUND_HEIGHT, LEVEL_WIDTH, GROUND_HEIGHT),
             ceiling: Rect::new(0., 0., LEVEL_WIDTH, CEILING_HEIGHT),
@@ -67,6 +77,7 @@ impl Level {
             right_wall: Rect::new(LEVEL_WIDTH - WALL_WIDTH, 0., WALL_WIDTH, LEVEL_HEIGHT),
             platforms,
             items,
+            blocks,
         }
     }
 
@@ -110,6 +121,11 @@ impl Level {
         // Draw items
         for item in &self.items {
             item.draw();
+        }
+
+        // Draw blocks
+        for block in &self.blocks {
+            block.draw();
         }
     }
 }

@@ -16,3 +16,5 @@ pub const ITEM_COUNT: usize = 12;
 pub const ITEM_THROW_SPEED: f32 = 600.0;
 pub const ITEM_BOUNCE_ENERGY_LOSS: f32 = 0.7;
 pub const ITEM_MIN_BOUNCE_SPEED: f32 = 60.0;
+pub const BLOCK_SIZE: f32 = PLAYER_SIZE * 1.2;
+pub const BLOCK_COUNT: usize = 40;

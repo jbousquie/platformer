@@ -14,6 +14,12 @@ pub enum PlayerState {
     Fall,
 }
 
+/// Represents the object a player is holding.
+pub enum HeldObject {
+    Item(usize),
+    Block(usize),
+}
+
 /// Represents the player character in the game.
 pub struct Player {
     pub position: Vec2,
@@ -22,7 +28,7 @@ pub struct Player {
     pub on_ground: bool,
     pub state: PlayerState,
     pub facing_right: bool,
-    pub held_item_index: Option<usize>,
+    pub held_object: Option<HeldObject>,
 }
 
 impl Player {
@@ -35,7 +41,7 @@ impl Player {
             on_ground: false,
             state: PlayerState::Idle,
             facing_right: true,
-            held_item_index: None,
+            held_object: None,
         }
     }
 

@@ -9,6 +9,7 @@ mod game;
 mod level;
 mod player;
 mod items;
+mod blocks;
 
 /// Configures the game window.
 fn window_conf() -> macroquad::prelude::Conf {
