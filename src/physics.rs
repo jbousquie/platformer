@@ -111,7 +111,15 @@ pub fn resolve_item_collisions(item: &mut Item, platforms: &[Rect], blocks: &[Bl
 }
 
 /// Resolves collisions for a single block with the level and other blocks.
-pub fn resolve_block_collisions(block: &mut Block, block_idx: usize, platforms: &[Rect], all_blocks: &[Block], ground: &Rect, left_wall: &Rect, right_wall: &Rect) {
+pub fn resolve_block_collisions(
+    block: &mut Block,
+    platforms: &[Rect],
+    blocks_before: &[Block],
+    blocks_after: &[Block],
+    ground: &Rect,
+    left_wall: &Rect,
+    right_wall: &Rect,
+) {
     block.on_ground = false;
     let block_rect = block.rect();
 
@@ -128,8 +136,8 @@ pub fn resolve_block_collisions(block: &mut Block, block_idx: usize, platforms: 
     // Combine all other solid objects for collision
     let mut colliders = platforms.to_vec();
     colliders.push(*ground);
-    for (i, other_block) in all_blocks.iter().enumerate() {
-        if i != block_idx && other_block.state == BlockState::Idle {
+    for other_block in blocks_before.iter().chain(blocks_after.iter()) {
+        if other_block.state == BlockState::Idle {
             colliders.push(other_block.rect());
         }
     }

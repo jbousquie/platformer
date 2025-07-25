@@ -33,14 +33,24 @@ pub async fn run() {
             &level.ceiling,
         );
 
-        physics::resolve_player_collisions(&mut player, platforms, blocks, ground, left_wall, right_wall, ceiling);
+        physics::resolve_player_collisions(
+            &mut player,
+            platforms,
+            blocks,
+            ground,
+            left_wall,
+            right_wall,
+            ceiling,
+        );
 
         // Update items
         for item in level.items.iter_mut() {
             if item.state != ItemState::Hooked {
                 if !item.on_ground {
                     item.update(dt);
-                    physics::resolve_item_collisions(item, platforms, blocks, ground, left_wall, right_wall);
+                    physics::resolve_item_collisions(
+                        item, platforms, blocks, ground, left_wall, right_wall,
+                    );
                 }
             } else {
                 // This state should be handled by process_interactions, but as a fallback
@@ -51,12 +61,23 @@ pub async fn run() {
         }
 
         // Update blocks
-        let all_blocks = level.blocks.clone();
-        for (i, block) in level.blocks.iter_mut().enumerate() {
+        for i in 0..level.blocks.len() {
+            let (blocks_before, blocks_after_with_current) = level.blocks.split_at_mut(i);
+            let (block_slice, blocks_after) = blocks_after_with_current.split_at_mut(1);
+            let block = &mut block_slice[0];
+
             if block.state != BlockState::Hooked {
                 if !block.on_ground {
                     block.update(dt);
-                    physics::resolve_block_collisions(block, i, platforms, &all_blocks, ground, left_wall, right_wall);
+                    physics::resolve_block_collisions(
+                        block,
+                        platforms,
+                        blocks_before,
+                        blocks_after,
+                        ground,
+                        left_wall,
+                        right_wall,
+                    );
                 }
             } else {
                 if player.held_object.is_none() {
@@ -124,7 +145,7 @@ fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [B
                 player.held_object = None;
             } else {
                 // Keep block hooked to player
-                block.position.y = player.position.y;
+                block.position.y = player.position.y - 20.;
                 block.position.x = if player.facing_right {
                     player.position.x + player.size.x
                 } else {
@@ -144,7 +165,10 @@ fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [B
                         && player.rect().bottom() <= block.rect().top() + 1.0 // Tolerance
                         && player_rect.overlaps(&block.rect());
 
-                    if !player_is_on_block && block.state == BlockState::Idle && player_rect.overlaps(&block.rect()) {
+                    if !player_is_on_block
+                        && block.state == BlockState::Idle
+                        && player_rect.overlaps(&block.rect())
+                    {
                         block.state = BlockState::Hooked;
                         block.velocity = Vec2::ZERO;
                         player.held_object = Some(HeldObject::Block(i));
