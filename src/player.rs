@@ -2,7 +2,9 @@
 //!
 //! This module defines the player's behavior and properties.
 
-use crate::constants::{GRAVITY, GROUND_HEIGHT, JUMP_FORCE, PLAYER_SIZE, PLAYER_SPEED};
+use crate::constants::{
+    GRAVITY, GROUND_HEIGHT, JUMP_FORCE, PLAYER_SIZE, PLAYER_SPAWN_X, PLAYER_SPEED,
+};
 use crate::level::LEVEL_HEIGHT;
 use macroquad::prelude::*;
 
@@ -35,7 +37,7 @@ impl Player {
     /// Creates a new player instance with default values.
     pub fn new() -> Self {
         Self {
-            position: vec2(100., LEVEL_HEIGHT - GROUND_HEIGHT - PLAYER_SIZE),
+            position: vec2(PLAYER_SPAWN_X, LEVEL_HEIGHT - GROUND_HEIGHT - PLAYER_SIZE),
             size: vec2(PLAYER_SIZE, PLAYER_SIZE),
             velocity: Vec2::new(0., 0.),
             on_ground: false,
