@@ -3,7 +3,7 @@
 //! This module defines the player's behavior and properties.
 
 use crate::constants::{
-    GRAVITY, GROUND_HEIGHT, JUMP_FORCE, PLAYER_SIZE, PLAYER_SPAWN_X, PLAYER_SPEED,
+    GRAVITY, GROUND_HEIGHT, JUMP_FORCE, PLAYER_COLOR, PLAYER_SIZE, PLAYER_SPAWN_X, PLAYER_SPEED,
 };
 use crate::level::LEVEL_HEIGHT;
 use macroquad::prelude::*;
@@ -99,7 +99,7 @@ impl Player {
             self.position.y,
             self.size.x,
             self.size.y,
-            WHITE,
+            PLAYER_COLOR,
         );
     }
 }

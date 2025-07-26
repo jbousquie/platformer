@@ -111,33 +111,33 @@ impl Level {
             self.ground.y,
             self.ground.w,
             self.ground.h,
-            YELLOW,
+            BOUNDS_COLOR,
         );
         draw_rectangle(
             self.ceiling.x,
             self.ceiling.y,
             self.ceiling.w,
             self.ceiling.h,
-            YELLOW,
+            BOUNDS_COLOR,
         );
         draw_rectangle(
             self.left_wall.x,
             self.left_wall.y,
             self.left_wall.w,
             self.left_wall.h,
-            YELLOW,
+            BOUNDS_COLOR,
         );
         draw_rectangle(
             self.right_wall.x,
             self.right_wall.y,
             self.right_wall.w,
             self.right_wall.h,
-            YELLOW,
+            BOUNDS_COLOR,
         );
 
         // Draw platforms
         for platform in &self.platforms {
-            draw_rectangle(platform.x, platform.y, platform.w, platform.h, GREEN);
+            draw_rectangle(platform.x, platform.y, platform.w, platform.h, PLATFORM_COLOR);
         }
 
         // Draw blocks

@@ -2,6 +2,8 @@
 //!
 //! This module contains constants used throughout the game.
 
+use macroquad::prelude::Color;
+
 pub const PLAYER_SIZE: f32 = 50.;
 pub const PLAYER_SPEED: f32 = 500.;
 pub const JUMP_FORCE: f32 = 800.;
@@ -21,3 +23,9 @@ pub const ITEM_MIN_BOUNCE_SPEED: f32 = 60.0;
 pub const BLOCK_SIZE: f32 = PLAYER_SIZE * 1.2;
 pub const BLOCK_COUNT: usize = 40;
 pub const BLOCK_OFFSET: f32 = 20.;
+
+// --- Colors
+pub const PLAYER_COLOR: Color = Color::new(1.0, 1.0, 1.0, 1.0); // WHITE
+pub const BACKGROUND_COLOR: Color = Color::new(0.0, 0.0, 0.0, 1.0); // BLACK
+pub const BOUNDS_COLOR: Color = Color::new(1.0, 1.0, 0.0, 1.0); // YELLOW
+pub const PLATFORM_COLOR: Color = Color::new(0.0, 1.0, 0.0, 1.0); // GREEN

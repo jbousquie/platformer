@@ -4,18 +4,24 @@
 
 use crate::blocks::{Block, BlockState};
 use crate::camera::Camera;
-use crate::constants::{BLOCK_OFFSET, ITEM_THROW_SPEED};
+use crate::constants::{BACKGROUND_COLOR, BLOCK_OFFSET, ITEM_THROW_SPEED};
 use crate::items::{Item, ItemState};
 use crate::level::Level;
 use crate::physics;
 use crate::player::{HeldObject, Player};
 use macroquad::prelude::*;
+use std::time::Instant;
+
+const FPS_LOG_INTERVAL_FRAMES: u32 = 1000;
 
 /// Runs the main game loop.
 pub async fn run() {
     let mut player = Player::new();
     let mut level = Level::new().await;
     let mut camera = Camera::new();
+
+    let mut frame_count = 0;
+    let mut last_log_time = Instant::now();
 
     loop {
         let dt = get_frame_time();
@@ -91,7 +97,7 @@ pub async fn run() {
         camera.update(&player);
 
         // Draw
-        clear_background(BLACK);
+        clear_background(BACKGROUND_COLOR);
 
         set_camera(&macroquad::prelude::Camera2D {
             target: vec2(
@@ -107,23 +113,36 @@ pub async fn run() {
 
         set_default_camera();
 
+        // Log FPS
+        frame_count += 1;
+        log_fps(&mut frame_count, &mut last_log_time);
+
         next_frame().await
     }
 }
 
+/// Logs the average FPS to the console every `FPS_LOG_INTERVAL_FRAMES` frames.
+fn log_fps(frame_count: &mut u32, last_log_time: &mut Instant) {
+    if *frame_count >= FPS_LOG_INTERVAL_FRAMES {
+        let elapsed_time = last_log_time.elapsed().as_secs_f32();
+        let fps = *frame_count as f32 / elapsed_time;
+        println!("Average FPS over last {} frames: {:.2}", *frame_count, fps);
+
+        // Reset counter and timer
+        *frame_count = 0;
+        *last_log_time = Instant::now();
+    }
+}
+
+
 /// Handles player interactions with items and blocks (grabbing, dropping, throwing).
 fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [Block]) {
     let space_pressed = is_key_pressed(KeyCode::Space);
-    let b_pressed = is_key_pressed(KeyCode::B);
 
     match player.held_object {
         Some(HeldObject::Item(idx)) => {
             let item = &mut items[idx];
             if space_pressed {
-                item.state = ItemState::Idle;
-                item.on_ground = false;
-                player.held_object = None;
-            } else if b_pressed {
                 item.state = ItemState::Thrown;
                 item.on_ground = false;
                 let dir = if player.facing_right { 1.0 } else { -1.0 };
