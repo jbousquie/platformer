@@ -5,22 +5,45 @@
 use crate::blocks::{Block, BlockState};
 use crate::constants::{ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED};
 use crate::items::{Item, ItemState};
-use crate::player::Player;
+use crate::player::{HeldObject, Player};
 use macroquad::prelude::{get_frame_time, Rect, Vec2};
 
 /// Resolves collisions between the player and the level, including boundaries, platforms, and blocks.
-pub fn resolve_player_collisions(player: &mut Player, platforms: &[Rect], blocks: &[Block], ground: &Rect, left_wall: &Rect, right_wall: &Rect, ceiling: &Rect) {
+pub fn resolve_player_collisions(
+    player: &mut Player,
+    platforms: &[Rect],
+    items: &[Item],
+    blocks: &[Block],
+    ground: &Rect,
+    left_wall: &Rect,
+    right_wall: &Rect,
+    ceiling: &Rect,
+) {
     player.on_ground = false;
-    let player_rect = player.rect();
 
-    // Player vs. Level bounds
-    if player_rect.overlaps(left_wall) {
-        player.position.x = left_wall.right();
+    // Determine the width of the held object, if any.
+    let held_object_width = match player.held_object {
+        Some(HeldObject::Item(idx)) => items.get(idx).map_or(0.0, |item| item.size.x),
+        Some(HeldObject::Block(idx)) => blocks.get(idx).map_or(0.0, |block| block.size.x),
+        None => 0.0,
+    };
+
+    // Player vs. Level bounds, adjusted for held objects
+    if player.facing_right {
+        // Collision with right wall
+        let player_right_edge = player.position.x + player.size.x + held_object_width;
+        if player_right_edge > right_wall.left() {
+            player.position.x = right_wall.left() - player.size.x - held_object_width;
+        }
+    } else {
+        // Collision with left wall
+        let player_left_edge = player.position.x - held_object_width;
+        if player_left_edge < left_wall.right() {
+            player.position.x = left_wall.right() + held_object_width;
+        }
     }
-    if player_rect.overlaps(right_wall) {
-        player.position.x = right_wall.left() - player.size.x;
-    }
-    if player_rect.overlaps(ceiling) {
+
+    if player.rect().overlaps(ceiling) {
         player.position.y = ceiling.bottom();
         player.velocity.y = 0.;
     }
@@ -37,8 +60,7 @@ pub fn resolve_player_collisions(player: &mut Player, platforms: &[Rect], blocks
     // Player vs. Surfaces (Ground, Platforms, Blocks)
     if player.velocity.y >= 0. {
         for surface in &surfaces {
-            let player_rect = player.rect();
-            if player_rect.overlaps(surface) {
+            if player.rect().overlaps(surface) {
                 let previous_player_bottom =
                     player.position.y + player.size.y - player.velocity.y * get_frame_time();
                 if previous_player_bottom <= surface.y {
@@ -49,10 +71,38 @@ pub fn resolve_player_collisions(player: &mut Player, platforms: &[Rect], blocks
             }
         }
     }
+
+    // Player vs. Blocks (Side collisions)
+    for block in blocks {
+        if block.state == BlockState::Idle {
+            let player_rect = player.rect();
+            let block_rect = block.rect();
+            if player_rect.overlaps(&block_rect) {
+                let previous_player_right = player.position.x + player.size.x - player.velocity.x * get_frame_time();
+                let previous_player_left = player.position.x - player.velocity.x * get_frame_time();
+
+                // Collision from the left
+                if previous_player_right <= block_rect.left() && player_rect.right() > block_rect.left() {
+                    player.position.x = block_rect.left() - player.size.x;
+                }
+                // Collision from the right
+                else if previous_player_left >= block_rect.right() && player_rect.left() < block_rect.right() {
+                    player.position.x = block_rect.right();
+                }
+            }
+        }
+    }
 }
 
 /// Resolves collisions for a single item with the level and blocks.
-pub fn resolve_item_collisions(item: &mut Item, platforms: &[Rect], blocks: &[Block], ground: &Rect, left_wall: &Rect, right_wall: &Rect) {
+pub fn resolve_item_collisions(
+    item: &mut Item,
+    platforms: &[Rect],
+    blocks: &[Block],
+    ground: &Rect,
+    left_wall: &Rect,
+    right_wall: &Rect,
+) {
     item.on_ground = false;
     let item_rect = item.rect();
 

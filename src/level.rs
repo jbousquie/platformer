@@ -24,7 +24,7 @@ pub struct Level {
 
 impl Level {
     /// Creates a new level instance, populating it with platforms and defining its boundaries.
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let mut platforms = vec![];
         let screen_width = 1024.;
         let screen_height = 768.;
@@ -63,11 +63,33 @@ impl Level {
         }
 
         let mut blocks = vec![];
+        let player_spawn_rect = Rect::new(
+            PLAYER_SPAWN_X,
+            LEVEL_HEIGHT - GROUND_HEIGHT - PLAYER_SIZE,
+            PLAYER_SIZE,
+            PLAYER_SIZE,
+        );
+        let safe_zone_margin = (PLAYER_SIZE * PLAYER_SAFE_ZONE_MULTIPLIER - PLAYER_SIZE) / 2.0;
+        let player_safe_zone = Rect::new(
+            player_spawn_rect.x - safe_zone_margin,
+            CEILING_HEIGHT,
+            player_spawn_rect.w + safe_zone_margin * 2.0,
+            LEVEL_HEIGHT - GROUND_HEIGHT - CEILING_HEIGHT,
+        );
+
         for _ in 0..BLOCK_COUNT {
-            blocks.push(Block::new(vec2(
-                rand::gen_range(WALL_WIDTH, LEVEL_WIDTH - WALL_WIDTH - BLOCK_SIZE),
-                rand::gen_range(CEILING_HEIGHT, LEVEL_HEIGHT - GROUND_HEIGHT - BLOCK_SIZE),
-            )));
+            let mut block_pos;
+            loop {
+                block_pos = vec2(
+                    rand::gen_range(WALL_WIDTH, LEVEL_WIDTH - WALL_WIDTH - BLOCK_SIZE),
+                    rand::gen_range(CEILING_HEIGHT, LEVEL_HEIGHT - GROUND_HEIGHT - BLOCK_SIZE),
+                );
+                let block_rect = Rect::new(block_pos.x, block_pos.y, BLOCK_SIZE, BLOCK_SIZE);
+                if !block_rect.overlaps(&player_safe_zone) {
+                    break;
+                }
+            }
+            blocks.push(Block::new(block_pos));
         }
 
         Self {
@@ -118,14 +140,16 @@ impl Level {
             draw_rectangle(platform.x, platform.y, platform.w, platform.h, GREEN);
         }
 
-        // Draw items
-        for item in &self.items {
-            item.draw();
-        }
-
         // Draw blocks
         for block in &self.blocks {
             block.draw();
+        }
+
+
+
+        // Draw items
+        for item in &self.items {
+            item.draw();
         }
     }
 }

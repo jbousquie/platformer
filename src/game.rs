@@ -4,7 +4,7 @@
 
 use crate::blocks::{Block, BlockState};
 use crate::camera::Camera;
-use crate::constants::ITEM_THROW_SPEED;
+use crate::constants::{BLOCK_OFFSET, ITEM_THROW_SPEED};
 use crate::items::{Item, ItemState};
 use crate::level::Level;
 use crate::physics;
@@ -14,7 +14,7 @@ use macroquad::prelude::*;
 /// Runs the main game loop.
 pub async fn run() {
     let mut player = Player::new();
-    let mut level = Level::new();
+    let mut level = Level::new().await;
     let mut camera = Camera::new();
 
     loop {
@@ -24,8 +24,9 @@ pub async fn run() {
         player.update(dt);
         process_interactions(&mut player, &mut level.items, &mut level.blocks);
 
-        let (platforms, blocks, ground, left_wall, right_wall, ceiling) = (
+        let (platforms, items, blocks, ground, left_wall, right_wall, ceiling) = (
             level.platforms.as_slice(),
+            level.items.as_slice(),
             level.blocks.as_slice(),
             &level.ground,
             &level.left_wall,
@@ -36,6 +37,7 @@ pub async fn run() {
         physics::resolve_player_collisions(
             &mut player,
             platforms,
+            items,
             blocks,
             ground,
             left_wall,
@@ -145,7 +147,7 @@ fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [B
                 player.held_object = None;
             } else {
                 // Keep block hooked to player
-                block.position.y = player.position.y - 20.;
+                block.position.y = player.position.y - BLOCK_OFFSET;
                 block.position.x = if player.facing_right {
                     player.position.x + player.size.x
                 } else {
@@ -157,7 +159,16 @@ fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [B
             // Try to grab an object
             if space_pressed {
                 let player_rect = player.rect();
-                // Prioritize grabbing blocks
+                // Prioritize grabbing items
+                for (i, item) in items.iter_mut().enumerate() {
+                    if item.state == ItemState::Idle && player_rect.overlaps(&item.rect()) {
+                        item.state = ItemState::Hooked;
+                        item.velocity = Vec2::ZERO;
+                        player.held_object = Some(HeldObject::Item(i));
+                        return; // Exit after grabbing one object
+                    }
+                }
+                // If no item was grabbed, try to grab a block
                 for (i, block) in blocks.iter_mut().enumerate() {
                     // Player cannot grab a block they are standing on.
                     let player_is_on_block = player.on_ground
@@ -172,15 +183,6 @@ fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [B
                         block.state = BlockState::Hooked;
                         block.velocity = Vec2::ZERO;
                         player.held_object = Some(HeldObject::Block(i));
-                        return; // Exit after grabbing one object
-                    }
-                }
-                // If no block was grabbed, try to grab an item
-                for (i, item) in items.iter_mut().enumerate() {
-                    if item.state == ItemState::Idle && player_rect.overlaps(&item.rect()) {
-                        item.state = ItemState::Hooked;
-                        item.velocity = Vec2::ZERO;
-                        player.held_object = Some(HeldObject::Item(i));
                         return; // Exit after grabbing one object
                     }
                 }
