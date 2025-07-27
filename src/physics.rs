@@ -2,13 +2,13 @@
 //!
 //! This module handles collision detection and resolution.
 
-use crate::baddies::Baddie;
+use crate::baddies::{Baddie, BaddieState};
 use crate::blocks::{Block, BlockState};
 use crate::constants::{ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED};
 use crate::items::{Item, ItemState};
 use crate::player::{HeldObject, Player};
-use ::rand::{Rng, thread_rng};
-use macroquad::prelude::{Rect, Vec2, get_frame_time, vec2};
+use ::rand::{thread_rng, Rng};
+use macroquad::prelude::{get_frame_time, vec2, Rect, Vec2};
 
 /// Resolves collisions between the player and the level, including boundaries, platforms, and blocks.
 pub fn resolve_player_collisions(
@@ -113,6 +113,7 @@ pub fn resolve_baddie_collisions(
     ground: &Rect,
     left_wall: &Rect,
     right_wall: &Rect,
+    ceiling: &Rect,
 ) {
     baddie.on_ground = false;
 
@@ -127,84 +128,95 @@ pub fn resolve_baddie_collisions(
         baddie.change_direction();
     }
 
+    // --- Baddie vs. Ceiling ---
+    if baddie.state == BaddieState::Elevation && baddie.rect().overlaps(ceiling) {
+        baddie.state = BaddieState::Idle;
+        baddie.velocity.y = 0.;
+        baddie.position.y = ceiling.bottom();
+        return; // Exit early as no other collision checks are needed
+    }
+
     // --- Baddie vs. Surfaces (Ground, Platforms, Blocks) ---
-    // Create a unified list of all solid surfaces the baddie can land on.
-    let mut surfaces = platforms.to_vec();
-    surfaces.push(*ground);
-    for block in blocks {
-        if block.state == BlockState::Idle {
-            surfaces.push(block.rect());
+    if baddie.state != BaddieState::Elevation {
+        // Create a unified list of all solid surfaces the baddie can land on.
+        let mut surfaces = platforms.to_vec();
+        surfaces.push(*ground);
+        for block in blocks {
+            if block.state == BlockState::Idle {
+                surfaces.push(block.rect());
+            }
         }
-    }
 
-    // Check for vertical collisions.
-    if baddie.velocity.y >= 0. {
-        for surface in &surfaces {
-            if baddie.rect().overlaps(surface) {
-                let previous_baddie_bottom =
-                    baddie.position.y + baddie.size.y - baddie.velocity.y * get_frame_time();
-                if previous_baddie_bottom <= surface.y {
-                    baddie.position.y = surface.y - baddie.size.y;
-                    baddie.velocity.y = 0.;
-                    baddie.on_ground = true;
+        // Check for vertical collisions.
+        if baddie.velocity.y >= 0. {
+            for surface in &surfaces {
+                if baddie.rect().overlaps(surface) {
+                    let previous_baddie_bottom =
+                        baddie.position.y + baddie.size.y - baddie.velocity.y * get_frame_time();
+                    if previous_baddie_bottom <= surface.y {
+                        baddie.position.y = surface.y - baddie.size.y;
+                        baddie.velocity.y = 0.;
+                        baddie.on_ground = true;
+                    }
                 }
             }
         }
-    }
 
-    // --- Baddie vs. Blocks (Side Collisions) ---
-    // Handle horizontal collisions with blocks.
-    for block in blocks {
-        if block.state == BlockState::Idle {
-            let baddie_rect = baddie.rect();
-            let block_rect = block.rect();
-            if baddie_rect.overlaps(&block_rect) {
-                let previous_baddie_right =
-                    baddie.position.x + baddie.size.x - baddie.velocity.x * get_frame_time();
-                let previous_baddie_left = baddie.position.x - baddie.velocity.x * get_frame_time();
+        // --- Baddie vs. Blocks (Side Collisions) ---
+        // Handle horizontal collisions with blocks.
+        for block in blocks {
+            if block.state == BlockState::Idle {
+                let baddie_rect = baddie.rect();
+                let block_rect = block.rect();
+                if baddie_rect.overlaps(&block_rect) {
+                    let previous_baddie_right =
+                        baddie.position.x + baddie.size.x - baddie.velocity.x * get_frame_time();
+                    let previous_baddie_left =
+                        baddie.position.x - baddie.velocity.x * get_frame_time();
 
-                // Collision from the left.
-                if previous_baddie_right <= block_rect.left()
-                    && baddie_rect.right() > block_rect.left()
-                {
-                    baddie.position.x = block_rect.left() - baddie.size.x;
+                    // Collision from the left.
+                    if previous_baddie_right <= block_rect.left()
+                        && baddie_rect.right() > block_rect.left()
+                    {
+                        baddie.position.x = block_rect.left() - baddie.size.x;
+                        baddie.change_direction();
+                    }
+                    // Collision from the right.
+                    else if previous_baddie_left >= block_rect.right()
+                        && baddie_rect.left() < block_rect.right()
+                    {
+                        baddie.position.x = block_rect.right();
+                        baddie.change_direction();
+                    }
+                }
+            }
+        }
+
+        // --- Edge Detection ---
+        // Check if the baddie is about to fall off a platform or block.
+        if baddie.on_ground {
+            // Create a probe point just ahead of and below the baddie to check for ground.
+            let probe_x = if baddie.facing_right {
+                baddie.rect().right()
+            } else {
+                baddie.rect().left()
+            };
+            let probe_y = baddie.rect().bottom() + 1.0;
+            let probe_point = vec2(probe_x, probe_y);
+
+            let mut ground_ahead = false;
+            for surface in &surfaces {
+                if surface.contains(probe_point) {
+                    ground_ahead = true;
+                    break;
+                }
+            }
+
+            // If there is no ground ahead, randomly decide whether to change direction or fall.
+            if !ground_ahead {
+                if thread_rng().gen_bool(0.1) {
                     baddie.change_direction();
                 }
-                // Collision from the right.
-                else if previous_baddie_left >= block_rect.right()
-                    && baddie_rect.left() < block_rect.right()
-                {
-                    baddie.position.x = block_rect.right();
-                    baddie.change_direction();
-                }
-            }
-        }
-    }
-
-    // --- Edge Detection ---
-    // Check if the baddie is about to fall off a platform or block.
-    if baddie.on_ground {
-        // Create a probe point just ahead of and below the baddie to check for ground.
-        let probe_x = if baddie.facing_right {
-            baddie.rect().right()
-        } else {
-            baddie.rect().left()
-        };
-        let probe_y = baddie.rect().bottom() + 1.0;
-        let probe_point = vec2(probe_x, probe_y);
-
-        let mut ground_ahead = false;
-        for surface in &surfaces {
-            if surface.contains(probe_point) {
-                ground_ahead = true;
-                break;
-            }
-        }
-
-        // If there is no ground ahead, randomly decide whether to change direction or fall.
-        if !ground_ahead {
-            if thread_rng().gen_bool(0.1) {
-                baddie.change_direction();
             }
         }
     }

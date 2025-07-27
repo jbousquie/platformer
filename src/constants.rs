@@ -28,6 +28,10 @@ pub const BADDIE_SIZE: f32 = PLAYER_SIZE * 0.8;
 pub const BADDIE_SPEED: f32 = 200.;
 pub const BADDIE_JUMP_FORCE: f32 = 600.;
 pub const BADDIE_JUMP_CHANCE: f32 = 0.005; // Roughly once every 20 seconds at 60fps
+pub const BADDIE_ELEVATION_THRESHOLD: u32 = 2000;
+pub const BADDIE_ELEVATION_SPEED: f32 = -150.0;
+pub const BADDIE_ELEVATION_SINE_AMPLITUDE: f32 = 40.0;
+pub const BADDIE_ELEVATION_SINE_FREQUENCY: f32 = 4.0;
 
 // --- Colors
 pub const PLAYER_COLOR: Color = Color::new(1.0, 1.0, 1.0, 1.0); // WHITE

@@ -116,7 +116,13 @@ fn update(game: &mut Game, dt: f32) {
     for baddie in game.baddies.iter_mut() {
         baddie.update(dt);
         physics::resolve_baddie_collisions(
-            baddie, platforms, blocks, ground, left_wall, right_wall,
+            baddie,
+            platforms,
+            blocks,
+            ground,
+            left_wall,
+            right_wall,
+            ceiling,
         );
     }
 

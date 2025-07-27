@@ -3,17 +3,21 @@
 //! This module defines the baddie's behavior and properties.
 
 use crate::constants::{
-    BADDIE_COLOR, BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE, BADDIE_SIZE, BADDIE_SPEED, GRAVITY,
+    BADDIE_COLOR, BADDIE_ELEVATION_SINE_AMPLITUDE, BADDIE_ELEVATION_SINE_FREQUENCY,
+    BADDIE_ELEVATION_SPEED, BADDIE_ELEVATION_THRESHOLD, BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE,
+    BADDIE_SIZE, BADDIE_SPEED, GRAVITY,
 };
-use macroquad::prelude::*;
 use ::rand::{thread_rng, Rng};
+use macroquad::prelude::*;
 
 /// Represents the different states a baddie can be in.
+#[derive(PartialEq)]
 pub enum BaddieState {
     Idle,
     Run,
     Jump,
     Fall,
+    Elevation,
 }
 
 /// Represents a baddie character in the game.
@@ -24,6 +28,9 @@ pub struct Baddie {
     pub on_ground: bool,
     pub state: BaddieState,
     pub facing_right: bool,
+    pub on_ground_frames: u32,
+    pub elevation_x_axis: f32,
+    pub elevation_time: f32,
 }
 
 impl Baddie {
@@ -36,6 +43,9 @@ impl Baddie {
             on_ground: false,
             state: BaddieState::Run,
             facing_right: thread_rng().gen_bool(0.5),
+            on_ground_frames: 0,
+            elevation_x_axis: 0.0,
+            elevation_time: 0.0,
         }
     }
 
@@ -46,20 +56,29 @@ impl Baddie {
 
     /// Updates the baddie's state, including position, velocity, and state, based on physics.
     pub fn update(&mut self, dt: f32) {
-        // Apply gravity
-        self.velocity.y += GRAVITY * dt;
-
-        // Set horizontal velocity based on direction
-        self.velocity.x = if self.facing_right {
-            BADDIE_SPEED
+        if self.state == BaddieState::Elevation {
+            self.velocity.y = BADDIE_ELEVATION_SPEED;
+            self.velocity.x = 0.0;
+            self.elevation_time += dt;
+            self.position.x = self.elevation_x_axis
+                + (self.elevation_time * BADDIE_ELEVATION_SINE_FREQUENCY).sin()
+                    * BADDIE_ELEVATION_SINE_AMPLITUDE;
         } else {
-            -BADDIE_SPEED
-        };
+            // Apply gravity
+            self.velocity.y += GRAVITY * dt;
 
-        // Randomly jump if on the ground
-        if self.on_ground && thread_rng().gen_range(0.0..1.0) < BADDIE_JUMP_CHANCE {
-            self.velocity.y = -BADDIE_JUMP_FORCE;
-            self.on_ground = false;
+            // Set horizontal velocity based on direction
+            self.velocity.x = if self.facing_right {
+                BADDIE_SPEED
+            } else {
+                -BADDIE_SPEED
+            };
+
+            // Randomly jump if on the ground
+            if self.on_ground && thread_rng().gen_range(0.0..1.0) < BADDIE_JUMP_CHANCE {
+                self.velocity.y = -BADDIE_JUMP_FORCE;
+                self.on_ground = false;
+            }
         }
 
         // Update position
@@ -67,17 +86,27 @@ impl Baddie {
 
         // Update state
         if self.on_ground {
+            self.on_ground_frames += 1;
             if self.velocity.x.abs() > 0.1 {
                 self.state = BaddieState::Run;
             } else {
                 self.state = BaddieState::Idle;
             }
         } else {
-            if self.velocity.y < 0. {
-                self.state = BaddieState::Jump;
-            } else {
-                self.state = BaddieState::Fall;
+            self.on_ground_frames = 0;
+            if self.state != BaddieState::Elevation {
+                if self.velocity.y < 0. {
+                    self.state = BaddieState::Jump;
+                } else {
+                    self.state = BaddieState::Fall;
+                }
             }
+        }
+
+        if self.on_ground_frames > BADDIE_ELEVATION_THRESHOLD {
+            self.state = BaddieState::Elevation;
+            self.elevation_x_axis = self.position.x;
+            self.on_ground_frames = 0;
         }
     }
 
