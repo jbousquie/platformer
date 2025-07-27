@@ -19,8 +19,15 @@ I carefully read the Macroquad documentation here : https://macroquad.rs/docs/
 ### Player Actions
 The player can interact with different objects in the world.
 
-- **Items**: Can be grabbed (`SPACE`), released (`SPACE`), and thrown (`B`). Thrown items bounce off surfaces.
+- **Items**: Can be grabbed (`SPACE`) and thrown (`SPACE`). Thrown items bounce off surfaces.
 - **Blocks**: Can be grabbed (`SPACE`) and released (`SPACE`). They are not throwable. Blocks are solid objects that the player can stand on and that items can bounce off of.
+
+### Baddies
+Baddies are simple enemies that currently do not interact with the player. Their behavior is as follows:
+- They walk back and forth horizontally.
+- They have a random chance of jumping.
+- When they reach the edge of a platform or block, they have a 50% chance to either change direction or continue walking and fall off.
+- They collide with walls and blocks, changing direction upon impact.
 
 ## Project Structure
 

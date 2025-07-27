@@ -2,14 +2,15 @@
 //!
 //! This is the entry point of the platformer game.
 
-mod constants;
-mod camera;
-mod physics;
-mod game;
-mod level;
-mod player;
-mod items;
+mod baddies;
 mod blocks;
+mod camera;
+mod constants;
+mod game;
+mod items;
+mod level;
+mod physics;
+mod player;
 
 /// Configures the game window.
 fn window_conf() -> macroquad::prelude::Conf {

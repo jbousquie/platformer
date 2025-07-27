@@ -2,11 +2,13 @@
 //!
 //! This module handles collision detection and resolution.
 
+use crate::baddies::Baddie;
 use crate::blocks::{Block, BlockState};
 use crate::constants::{ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED};
 use crate::items::{Item, ItemState};
 use crate::player::{HeldObject, Player};
-use macroquad::prelude::{get_frame_time, Rect, Vec2};
+use macroquad::prelude::{get_frame_time, Rect, Vec2, vec2};
+use ::rand::{thread_rng, Rng};
 
 /// Resolves collisions between the player and the level, including boundaries, platforms, and blocks.
 pub fn resolve_player_collisions(
@@ -21,34 +23,36 @@ pub fn resolve_player_collisions(
 ) {
     player.on_ground = false;
 
-    // Determine the width of the held object, if any.
+    // Determine the width of the held object, if any, to adjust the player's bounding box.
+    // This prevents the player from moving into walls while holding an object.
     let held_object_width = match player.held_object {
         Some(HeldObject::Item(idx)) => items.get(idx).map_or(0.0, |item| item.size.x),
         Some(HeldObject::Block(idx)) => blocks.get(idx).map_or(0.0, |block| block.size.x),
         None => 0.0,
     };
 
-    // Player vs. Level bounds, adjusted for held objects
+    // --- Player vs. Level Bounds ---
+    // Adjust player position to prevent moving beyond level boundaries.
     if player.facing_right {
-        // Collision with right wall
         let player_right_edge = player.position.x + player.size.x + held_object_width;
         if player_right_edge > right_wall.left() {
             player.position.x = right_wall.left() - player.size.x - held_object_width;
         }
     } else {
-        // Collision with left wall
         let player_left_edge = player.position.x - held_object_width;
         if player_left_edge < left_wall.right() {
             player.position.x = left_wall.right() + held_object_width;
         }
     }
 
+    // Prevent player from moving through the ceiling.
     if player.rect().overlaps(ceiling) {
         player.position.y = ceiling.bottom();
         player.velocity.y = 0.;
     }
 
-    // Create a list of all solid surfaces for the player to land on
+    // --- Player vs. Surfaces (Ground, Platforms, Blocks) ---
+    // Create a unified list of all solid surfaces the player can land on.
     let mut surfaces = platforms.to_vec();
     surfaces.push(*ground);
     for block in blocks {
@@ -57,10 +61,11 @@ pub fn resolve_player_collisions(
         }
     }
 
-    // Player vs. Surfaces (Ground, Platforms, Blocks)
+    // Check for vertical collisions.
     if player.velocity.y >= 0. {
         for surface in &surfaces {
             if player.rect().overlaps(surface) {
+                // To prevent sinking, check if the player was above the surface in the previous frame.
                 let previous_player_bottom =
                     player.position.y + player.size.y - player.velocity.y * get_frame_time();
                 if previous_player_bottom <= surface.y {
@@ -72,27 +77,141 @@ pub fn resolve_player_collisions(
         }
     }
 
-    // Player vs. Blocks (Side collisions)
+    // --- Player vs. Blocks (Side Collisions) ---
+    // Handle horizontal collisions with blocks separately to prevent pushing.
     for block in blocks {
         if block.state == BlockState::Idle {
             let player_rect = player.rect();
             let block_rect = block.rect();
             if player_rect.overlaps(&block_rect) {
-                let previous_player_right = player.position.x + player.size.x - player.velocity.x * get_frame_time();
+                let previous_player_right =
+                    player.position.x + player.size.x - player.velocity.x * get_frame_time();
                 let previous_player_left = player.position.x - player.velocity.x * get_frame_time();
 
-                // Collision from the left
-                if previous_player_right <= block_rect.left() && player_rect.right() > block_rect.left() {
+                // Collision from the left.
+                if previous_player_right <= block_rect.left()
+                    && player_rect.right() > block_rect.left()
+                {
                     player.position.x = block_rect.left() - player.size.x;
                 }
-                // Collision from the right
-                else if previous_player_left >= block_rect.right() && player_rect.left() < block_rect.right() {
+                // Collision from the right.
+                else if previous_player_left >= block_rect.right()
+                    && player_rect.left() < block_rect.right()
+                {
                     player.position.x = block_rect.right();
                 }
             }
         }
     }
 }
+
+/// Resolves collisions for a single baddie with the level, including boundaries, platforms, and blocks.
+pub fn resolve_baddie_collisions(
+    baddie: &mut Baddie,
+    platforms: &[Rect],
+    blocks: &[Block],
+    ground: &Rect,
+    left_wall: &Rect,
+    right_wall: &Rect,
+) {
+    baddie.on_ground = false;
+
+    // --- Baddie vs. Walls ---
+    // Reverse direction upon hitting a wall.
+    if baddie.rect().right() > right_wall.left() {
+        baddie.position.x = right_wall.left() - baddie.size.x;
+        baddie.change_direction();
+    }
+    if baddie.rect().left() < left_wall.right() {
+        baddie.position.x = left_wall.right();
+        baddie.change_direction();
+    }
+
+    // --- Baddie vs. Surfaces (Ground, Platforms, Blocks) ---
+    // Create a unified list of all solid surfaces the baddie can land on.
+    let mut surfaces = platforms.to_vec();
+    surfaces.push(*ground);
+    for block in blocks {
+        if block.state == BlockState::Idle {
+            surfaces.push(block.rect());
+        }
+    }
+
+    // Check for vertical collisions.
+    if baddie.velocity.y >= 0. {
+        for surface in &surfaces {
+            if baddie.rect().overlaps(surface) {
+                let previous_baddie_bottom =
+                    baddie.position.y + baddie.size.y - baddie.velocity.y * get_frame_time();
+                if previous_baddie_bottom <= surface.y {
+                    baddie.position.y = surface.y - baddie.size.y;
+                    baddie.velocity.y = 0.;
+                    baddie.on_ground = true;
+                }
+            }
+        }
+    }
+
+    // --- Baddie vs. Blocks (Side Collisions) ---
+    // Handle horizontal collisions with blocks.
+    for block in blocks {
+        if block.state == BlockState::Idle {
+            let baddie_rect = baddie.rect();
+            let block_rect = block.rect();
+            if baddie_rect.overlaps(&block_rect) {
+                let previous_baddie_right =
+                    baddie.position.x + baddie.size.x - baddie.velocity.x * get_frame_time();
+                let previous_baddie_left = baddie.position.x - baddie.velocity.x * get_frame_time();
+
+                // Collision from the left.
+                if previous_baddie_right <= block_rect.left()
+                    && baddie_rect.right() > block_rect.left()
+                {
+                    baddie.position.x = block_rect.left() - baddie.size.x;
+                    baddie.change_direction();
+                }
+                // Collision from the right.
+                else if previous_baddie_left >= block_rect.right()
+                    && baddie_rect.left() < block_rect.right()
+                {
+                    baddie.position.x = block_rect.right();
+                    baddie.change_direction();
+                }
+            }
+        }
+    }
+
+    // --- Edge Detection ---
+    // Check if the baddie is about to fall off a platform or block.
+    if baddie.on_ground {
+        // Create a probe point just ahead of and below the baddie to check for ground.
+        let probe_x = if baddie.facing_right {
+            baddie.rect().right()
+        } else {
+            baddie.rect().left()
+        };
+        let probe_y = baddie.rect().bottom() + 1.0;
+        let probe_point = vec2(probe_x, probe_y);
+
+        let mut ground_ahead = false;
+        for surface in &surfaces {
+            if surface.contains(probe_point) {
+                ground_ahead = true;
+                break;
+            }
+        }
+
+        // If there is no ground ahead, randomly decide whether to change direction or fall.
+        if !ground_ahead {
+            if thread_rng().gen_bool(0.5) {
+                baddie.change_direction();
+            }
+        }
+    }
+}
+
+
+
 
 /// Resolves collisions for a single item with the level and blocks.
 pub fn resolve_item_collisions(

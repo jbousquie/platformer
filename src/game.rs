@@ -2,46 +2,105 @@
 //!
 //! This module contains the main game loop and game state management.
 
+use crate::baddies::Baddie;
 use crate::blocks::{Block, BlockState};
 use crate::camera::Camera;
-use crate::constants::{BACKGROUND_COLOR, BLOCK_OFFSET, ITEM_THROW_SPEED};
+
+use crate::constants::{
+    BACKGROUND_COLOR, BLOCK_OFFSET, ITEM_THROW_SPEED, MAX_BADDIES,
+};
 use crate::items::{Item, ItemState};
-use crate::level::Level;
+use crate::level::{Level, LEVEL_HEIGHT, LEVEL_WIDTH};
 use crate::physics;
 use crate::player::{HeldObject, Player};
 use macroquad::prelude::*;
+use ::rand::{thread_rng, Rng};
 use std::time::Instant;
 
 const FPS_LOG_INTERVAL_FRAMES: u32 = 1000;
 
-/// Runs the main game loop.
-pub async fn run() {
-    let mut player = Player::new();
-    let mut level = Level::new().await;
-    let mut camera = Camera::new();
+/// Represents the main game state.
+pub struct Game {
+    player: Player,
+    level: Level,
+    camera: Camera,
+    baddies: Vec<Baddie>,
+}
 
-    let mut frame_count = 0;
-    let mut last_log_time = Instant::now();
+impl Game {
+    /// Creates a new game instance.
+    async fn new() -> Self {
+        let player = Player::new();
+        let level = Level::new().await;
+        let camera = Camera::new();
+        let mut baddies = Vec::new();
 
-    loop {
-        let dt = get_frame_time();
+        for _ in 0..MAX_BADDIES {
+            let x = thread_rng().gen_range(0.0..LEVEL_WIDTH);
+            let y = LEVEL_HEIGHT / 2.0;
+            baddies.push(Baddie::new(vec2(x, y)));
+        }
 
-        // Update
-        player.update(dt);
-        process_interactions(&mut player, &mut level.items, &mut level.blocks);
+        Self {
+            player,
+            level,
+            camera,
+            baddies,
+        }
+    }
 
-        let (platforms, items, blocks, ground, left_wall, right_wall, ceiling) = (
-            level.platforms.as_slice(),
-            level.items.as_slice(),
-            level.blocks.as_slice(),
-            &level.ground,
-            &level.left_wall,
-            &level.right_wall,
-            &level.ceiling,
+    /// Runs the main game loop.
+    async fn run(&mut self) {
+        let mut frame_count = 0;
+        let mut last_log_time = Instant::now();
+
+        loop {
+            let dt = get_frame_time();
+
+            // Update
+            self.update(dt);
+
+            // Draw
+            self.draw();
+
+            // Log FPS
+            frame_count += 1;
+            log_fps(&mut frame_count, &mut last_log_time);
+
+            next_frame().await
+        }
+    }
+
+    /// Updates the game state for the current frame.
+    fn update(&mut self, dt: f32) {
+        self.player.update(dt);
+        // Player interactions can modify items and blocks, so it needs mutable access.
+        process_interactions(
+            &mut self.player,
+            &mut self.level.items,
+            &mut self.level.blocks,
         );
 
+        // --- Borrowing Strategy for Collision Detection ---
+        // To satisfy the borrow checker, we structure the update logic to avoid simultaneous
+        // mutable and immutable borrows of `self.level.blocks`.
+
+        // Destructure level components into immutable slices for collision checks that don't require mutation.
+        let (platforms, items, ground, left_wall, right_wall, ceiling) = (
+            self.level.platforms.as_slice(),
+            self.level.items.as_slice(),
+            &self.level.ground,
+            &self.level.left_wall,
+            &self.level.right_wall,
+            &self.level.ceiling,
+        );
+
+        // Create an immutable borrow of blocks to pass to functions that only need to read block data.
+        let blocks = self.level.blocks.as_slice();
+
+        // Player collisions are resolved first, using the immutable block slice.
         physics::resolve_player_collisions(
-            &mut player,
+            &mut self.player,
             platforms,
             items,
             blocks,
@@ -51,8 +110,8 @@ pub async fn run() {
             ceiling,
         );
 
-        // Update items
-        for item in level.items.iter_mut() {
+        // Update items, which also use the immutable block slice for collision checks.
+        for item in self.level.items.iter_mut() {
             if item.state != ItemState::Hooked {
                 if !item.on_ground {
                     item.update(dt);
@@ -61,16 +120,21 @@ pub async fn run() {
                     );
                 }
             } else {
-                // This state should be handled by process_interactions, but as a fallback
-                if player.held_object.is_none() {
+                if self.player.held_object.is_none() {
                     item.state = ItemState::Idle;
                 }
             }
         }
 
-        // Update blocks
-        for i in 0..level.blocks.len() {
-            let (blocks_before, blocks_after_with_current) = level.blocks.split_at_mut(i);
+        // --- Handling Mutable Borrows for Block-on-Block Collisions ---
+        // The immutable borrow of `blocks` is no longer needed, so we can now create mutable borrows.
+        // To resolve collisions between blocks, we need to mutate a block while comparing it against
+        // other blocks. A standard `iter_mut` would violate the borrow checker (one mutable borrow
+        // and multiple immutable borrows at the same time).
+        // The solution is to use `split_at_mut`, which divides the slice into two mutable parts,
+        // allowing us to safely mutate the current block while accessing the others.
+        for i in 0..self.level.blocks.len() {
+            let (blocks_before, blocks_after_with_current) = self.level.blocks.split_at_mut(i);
             let (block_slice, blocks_after) = blocks_after_with_current.split_at_mut(1);
             let block = &mut block_slice[0];
 
@@ -80,45 +144,61 @@ pub async fn run() {
                     physics::resolve_block_collisions(
                         block,
                         platforms,
-                        blocks_before,
-                        blocks_after,
+                        blocks_before, // All blocks before the current one
+                        blocks_after,  // All blocks after the current one
                         ground,
                         left_wall,
                         right_wall,
                     );
                 }
             } else {
-                if player.held_object.is_none() {
+                if self.player.held_object.is_none() {
                     block.state = BlockState::Idle;
                 }
             }
         }
 
-        camera.update(&player);
+        // --- Baddie Updates ---
+        // After all block mutations are done, we can safely create a new immutable borrow
+        // of the entire `blocks` slice to check for baddie collisions.
+        let blocks = self.level.blocks.as_slice();
+        for baddie in self.baddies.iter_mut() {
+            baddie.update(dt);
+            physics::resolve_baddie_collisions(
+                baddie, platforms, blocks, ground, left_wall, right_wall,
+            );
+        }
 
-        // Draw
+        self.camera.update(&self.player);
+    }
+
+    /// Draws the game world.
+    fn draw(&self) {
         clear_background(BACKGROUND_COLOR);
 
         set_camera(&macroquad::prelude::Camera2D {
             target: vec2(
-                camera.rect.x + camera.rect.w / 2.,
-                camera.rect.y + camera.rect.h / 2.,
+                self.camera.rect.x + self.camera.rect.w / 2.,
+                self.camera.rect.y + self.camera.rect.h / 2.,
             ),
-            zoom: vec2(1. / camera.rect.w, 1. / camera.rect.h),
+            zoom: vec2(1. / self.camera.rect.w, 1. / self.camera.rect.h),
             ..Default::default()
         });
 
-        level.draw();
-        player.draw();
+        self.level.draw();
+        self.player.draw();
+        for baddie in self.baddies.iter() {
+            baddie.draw();
+        }
 
         set_default_camera();
-
-        // Log FPS
-        frame_count += 1;
-        log_fps(&mut frame_count, &mut last_log_time);
-
-        next_frame().await
     }
+}
+
+/// Runs the main game loop.
+pub async fn run() {
+    let mut game = Game::new().await;
+    game.run().await;
 }
 
 /// Logs the average FPS to the console every `FPS_LOG_INTERVAL_FRAMES` frames.
@@ -133,7 +213,6 @@ fn log_fps(frame_count: &mut u32, last_log_time: &mut Instant) {
         *last_log_time = Instant::now();
     }
 }
-
 
 /// Handles player interactions with items and blocks (grabbing, dropping, throwing).
 fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [Block]) {

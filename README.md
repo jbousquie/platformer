@@ -8,8 +8,14 @@ A attempt to create a platformer game using Rust and [macroquad](https://github.
 
 -   **Move Left/Right**: Use the Left and Right arrow keys.
 -   **Jump**: Press the Up arrow key.
--   **Grab/Release Objects**: Press the `SPACE` key to grab a nearby item or block, or to release one you are holding.
--   **Throw Items**: While holding an item, press the `B` key to throw it. Blocks cannot be thrown.
+-   **Grab/Throw Items**: Press the `SPACE` key to grab a nearby item. Press `SPACE` again to throw it.
+-   **Grab/Release Blocks**: Press the `SPACE` key to grab a nearby block, or to release one you are holding. Blocks cannot be thrown.
+
+## Game Entities
+
+### Baddies
+
+Baddies are simple enemies that roam the level. They walk back and forth, randomly jump, and can fall off platforms. They do not interact with the player.
 
 ## License & Credits
 
