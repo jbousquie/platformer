@@ -9,18 +9,20 @@ use crate::camera::Camera;
 use crate::constants::{
     BACKGROUND_COLOR, BLOCK_OFFSET, ITEM_THROW_SPEED, MAX_BADDIES,
 };
+use crate::gamestate::GameState;
 use crate::items::{Item, ItemState};
 use crate::level::{Level, LEVEL_HEIGHT, LEVEL_WIDTH};
 use crate::physics;
 use crate::player::{HeldObject, Player};
-use macroquad::prelude::*;
 use ::rand::{thread_rng, Rng};
+use macroquad::prelude::*;
 use std::time::Instant;
 
 const FPS_LOG_INTERVAL_FRAMES: u32 = 1000;
 
 /// Represents the main game state.
 pub struct Game {
+    gamestate: GameState,
     player: Player,
     level: Level,
     camera: Camera,
@@ -42,6 +44,7 @@ impl Game {
         }
 
         Self {
+            gamestate: GameState::Intro,
             player,
             level,
             camera,
@@ -51,24 +54,82 @@ impl Game {
 
     /// Runs the main game loop.
     async fn run(&mut self) {
+        loop {
+            match self.gamestate {
+                GameState::Intro => {
+                    self.run_intro().await;
+                }
+                GameState::Level1 => {
+                    self.run_level1().await;
+                }
+                GameState::GameOver => {
+                    self.run_game_over().await;
+                }
+            }
+            next_frame().await
+        }
+    }
+
+    async fn run_intro(&mut self) {
+        clear_background(BLACK);
+        draw_text(
+            "PLATFORMER",
+            screen_width() / 2. - 150.,
+            screen_height() / 2. - 40.,
+            50.,
+            WHITE,
+        );
+        draw_text(
+            "Press ENTER to start",
+            screen_width() / 2. - 130.,
+            screen_height() / 2. + 20.,
+            30.,
+            WHITE,
+        );
+
+        if is_key_pressed(KeyCode::Enter) {
+            self.gamestate = GameState::Level1;
+        }
+    }
+
+    async fn run_game_over(&mut self) {
+        clear_background(BLACK);
+        draw_text(
+            "GAME OVER",
+            screen_width() / 2. - 150.,
+            screen_height() / 2. - 40.,
+            50.,
+            WHITE,
+        );
+        draw_text(
+            "Press ENTER to restart",
+            screen_width() / 2. - 160.,
+            screen_height() / 2. + 20.,
+            30.,
+            WHITE,
+        );
+
+        if is_key_pressed(KeyCode::Enter) {
+            *self = Game::new().await;
+            self.gamestate = GameState::Level1;
+        }
+    }
+
+    async fn run_level1(&mut self) {
         let mut frame_count = 0;
         let mut last_log_time = Instant::now();
 
-        loop {
-            let dt = get_frame_time();
+        let dt = get_frame_time();
 
-            // Update
-            self.update(dt);
+        // Update
+        self.update(dt);
 
-            // Draw
-            self.draw();
+        // Draw
+        self.draw();
 
-            // Log FPS
-            frame_count += 1;
-            log_fps(&mut frame_count, &mut last_log_time);
-
-            next_frame().await
-        }
+        // Log FPS
+        frame_count += 1;
+        log_fps(&mut frame_count, &mut last_log_time);
     }
 
     /// Updates the game state for the current frame.
@@ -209,8 +270,7 @@ impl Game {
         // --- Player vs. Baddie Collision ---
         for baddie in &self.baddies {
             if self.player.rect().overlaps(&baddie.rect()) {
-                println!("Game Over! Player collided with a baddie.");
-                std::process::exit(0);
+                self.gamestate = GameState::GameOver;
             }
         }
 
@@ -218,8 +278,7 @@ impl Game {
         // Check for collision between the player and any thrown item.
         for item in &self.level.items {
             if item.state == ItemState::Thrown && self.player.rect().overlaps(&item.rect()) {
-                println!("Game Over! Player was hit by a thrown item.");
-                std::process::exit(0);
+                self.gamestate = GameState::GameOver;
             }
         }
     }

@@ -13,6 +13,7 @@ This is a 2D platformer game built in Rust using the `macroquad` game library.
 The project almost follows the tutorial steps here : https://mq.agical.se/index.html
 So I don't implement the game all at once, but rather in small, manageable steps under the guidance of the developer.
 I carefully read the Macroquad documentation here : https://macroquad.rs/docs/
+To check, just run `cargo build`,  not "cargo run". The developer will run the game.
 
 ## Game Mechanics
 
