@@ -35,3 +35,6 @@ pub const BADDIE_COLOR: Color = Color::new(0.5, 0.5, 1.0, 1.0); // Light Blue
 pub const BACKGROUND_COLOR: Color = Color::new(0.0, 0.0, 0.0, 1.0); // BLACK
 pub const BOUNDS_COLOR: Color = Color::new(1.0, 1.0, 0.0, 1.0); // YELLOW
 pub const PLATFORM_COLOR: Color = Color::new(0.0, 1.0, 0.0, 1.0); // GREEN
+pub const ITEM_IDLE_COLOR: Color = Color::new(0.0, 0.0, 1.0, 1.0); // BLUE
+pub const ITEM_HOOKED_COLOR: Color = Color::new(1.0, 1.0, 0.0, 1.0); // YELLOW
+pub const ITEM_THROWN_COLOR: Color = Color::new(1.0, 0.0, 0.0, 1.0); // RED

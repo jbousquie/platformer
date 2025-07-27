@@ -2,7 +2,9 @@
 //!
 //! This module defines the items that appear in the game world.
 
-use crate::constants::{GRAVITY, ITEM_SIZE};
+use crate::constants::{
+    GRAVITY, ITEM_HOOKED_COLOR, ITEM_IDLE_COLOR, ITEM_SIZE, ITEM_THROWN_COLOR,
+};
 use macroquad::prelude::*;
 
 /// Represents the state of an item.
@@ -50,9 +52,9 @@ impl Item {
     /// Draws the item on the screen.
     pub fn draw(&self) {
         let color = match self.state {
-            ItemState::Idle => BLUE,
-            ItemState::Hooked => YELLOW,
-            ItemState::Thrown => RED,
+            ItemState::Idle => ITEM_IDLE_COLOR,
+            ItemState::Hooked => ITEM_HOOKED_COLOR,
+            ItemState::Thrown => ITEM_THROWN_COLOR,
         };
         draw_rectangle(
             self.position.x,

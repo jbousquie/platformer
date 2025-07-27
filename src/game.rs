@@ -170,6 +170,15 @@ impl Game {
         }
 
         self.camera.update(&self.player);
+
+        // --- Game Over Condition ---
+        // Check for collision between the player and any thrown item.
+        for item in &self.level.items {
+            if item.state == ItemState::Thrown && self.player.rect().overlaps(&item.rect()) {
+                println!("Game Over! Player was hit by a thrown item.");
+                std::process::exit(0);
+            }
+        }
     }
 
     /// Draws the game world.
