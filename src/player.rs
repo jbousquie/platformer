@@ -2,10 +2,15 @@
 //!
 //! This module defines the player's behavior and properties.
 
-use crate::constants::{
-    GRAVITY, GROUND_HEIGHT, JUMP_FORCE, PLAYER_COLOR, PLAYER_SIZE, PLAYER_SPAWN_X, PLAYER_SPEED,
+use crate::{
+    blocks::{Block, BlockState},
+    constants::{
+        BLOCK_OFFSET, GRAVITY, GROUND_HEIGHT, ITEM_THROW_SPEED, JUMP_FORCE, PLAYER_COLOR,
+        PLAYER_SIZE, PLAYER_SPAWN_X, PLAYER_SPEED,
+    },
+    items::{Item, ItemState},
+    level::LEVEL_HEIGHT,
 };
-use crate::level::LEVEL_HEIGHT;
 use macroquad::prelude::*;
 
 /// Represents the different states the player can be in.
@@ -17,6 +22,7 @@ pub enum PlayerState {
 }
 
 /// Represents the object a player is holding.
+#[derive(PartialEq)]
 pub enum HeldObject {
     Item(usize),
     Block(usize),
@@ -101,5 +107,81 @@ impl Player {
             self.size.y,
             PLAYER_COLOR,
         );
+    }
+
+    /// Handles player interactions with items and blocks (grabbing, dropping, throwing).
+    pub fn process_interactions(&mut self, items: &mut [Item], blocks: &mut [Block]) {
+        let space_pressed = is_key_pressed(KeyCode::Space);
+
+        match self.held_object {
+            Some(HeldObject::Item(idx)) => {
+                let item = &mut items[idx];
+                if space_pressed {
+                    item.state = ItemState::Thrown;
+                    item.on_ground = false;
+                    let dir = if self.facing_right { 1.0 } else { -1.0 };
+                    item.velocity = self.velocity + vec2(dir, -1.0).normalize() * ITEM_THROW_SPEED;
+                    self.held_object = None;
+                } else {
+                    // Keep item hooked to player
+                    item.position.y = self.position.y;
+                    item.position.x = if self.facing_right {
+                        self.position.x + self.size.x
+                    } else {
+                        self.position.x - item.size.x
+                    };
+                }
+            }
+            Some(HeldObject::Block(idx)) => {
+                let block = &mut blocks[idx];
+                if space_pressed {
+                    block.state = BlockState::Idle;
+                    block.on_ground = false;
+                    self.held_object = None;
+                } else {
+                    // Keep block hooked to player
+                    block.position.y = self.position.y - BLOCK_OFFSET;
+                    block.position.x = if self.facing_right {
+                        self.position.x + self.size.x
+                    } else {
+                        self.position.x - block.size.x
+                    };
+                }
+            }
+            None => {
+                // Try to grab an object
+                if space_pressed {
+                    let player_rect = self.rect();
+                    // Prioritize grabbing items
+                    for (i, item) in items.iter_mut().enumerate() {
+                        if item.state == ItemState::Idle && player_rect.overlaps(&item.rect()) {
+                            item.state = ItemState::Hooked;
+                            item.velocity = Vec2::ZERO;
+                            self.held_object = Some(HeldObject::Item(i));
+                            return; // Exit after grabbing one object
+                        }
+                    }
+                    // If no item was grabbed, try to grab a block
+                    for (i, block) in blocks.iter_mut().enumerate() {
+                        // Player cannot grab a block they are standing on.
+                        let player_is_on_block = self.on_ground
+                            && self.rect().bottom() >= block.rect().top()
+                            && self.rect().bottom() <= block.rect().top() + 1.0
+                            // Tolerance
+                            && player_rect.overlaps(&block.rect());
+
+                        if !player_is_on_block
+                            && block.state == BlockState::Idle
+                            && player_rect.overlaps(&block.rect())
+                        {
+                            block.state = BlockState::Hooked;
+                            block.velocity = Vec2::ZERO;
+                            self.held_object = Some(HeldObject::Block(i));
+                            return; // Exit after grabbing one object
+                        }
+                    }
+                }
+            }
+        }
     }
 }

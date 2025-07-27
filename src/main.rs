@@ -7,7 +7,7 @@ mod blocks;
 mod camera;
 mod constants;
 mod game;
-mod gamestate;
+mod game_states;
 mod items;
 mod level;
 mod physics;

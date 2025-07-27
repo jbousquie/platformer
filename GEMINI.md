@@ -13,7 +13,6 @@ This is a 2D platformer game built in Rust using the `macroquad` game library.
 The project almost follows the tutorial steps here : https://mq.agical.se/index.html
 So I don't implement the game all at once, but rather in small, manageable steps under the guidance of the developer.
 I carefully read the Macroquad documentation here : https://macroquad.rs/docs/
-To check, just run `cargo build`,  not "cargo run". The developer will run the game.
 
 ## Game Mechanics
 
@@ -34,12 +33,17 @@ Baddies are simple enemies that currently do not interact with the player. Their
 
 The project is organized into several modules, each responsible for a specific part of the game's functionality:
 
-- **`main.rs`**: The entry point of the application. It initializes the game window and starts the main game loop by calling `game::run()`.
-- **`game.rs`**: Contains the core game loop. It manages the main game state, including the player, level, and camera. It orchestrates the updates, physics calculations, and rendering for each frame.
-- **`player.rs`**: Defines the `Player` character. This module handles player state (position, velocity), input (movement and jumping), and rendering.
+- **`main.rs`**: The entry point of the application. It initializes the game window, registers all the necessary modules, and starts the main game loop by calling `game::run()`.
+- **`game.rs`**: Contains the core `Game` struct and the main game loop. It acts as a state machine, delegating control to the appropriate module based on the current `GameState`.
+- **`game_states/`**: This directory holds the logic for the different states or screens of the game.
+    - **`mod.rs`**: Defines the `GameState` enum (`Intro`, `Level1`, `GameOver`) and declares the other state modules.
+    - **`intro.rs`**: Handles the title screen logic, waiting for the user to start the game.
+    - **`level1.rs`**: Contains all the logic for the main gameplay, including updating the player, baddies, and items, handling physics and collisions, and drawing the world.
+    - **`game_over.rs`**: Manages the game-over screen, waiting for the user to restart.
+- **`player.rs`**: Defines the `Player` character. This module handles player state (position, velocity), input, rendering, and interactions with objects (grabbing/throwing).
 - **`items.rs`**: Defines the `Item` struct and its behavior.
 - **`blocks.rs`**: Defines the `Block` struct and its behavior.
-- **`level.rs`**: Defines the game world's structure. It procedurally generates the level layout, including platforms, boundaries, and spawning items and blocks.
+- **`level.rs`**: Defines the game world's structure. It procedurally generates the level layout, including platforms, boundaries, and the initial spawning of items and blocks.
 - **`physics.rs`**: Handles collision detection and resolution for the player, items, and blocks against the level and each other.
 - **`camera.rs`**: Manages the game camera. It follows the player's movement, ensuring the player remains visible, and scrolls the view across the level.
 - **`constants.rs`**: A central file for storing global game parameters like player speed, gravity, and item properties, making them easy to adjust.
