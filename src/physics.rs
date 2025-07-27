@@ -7,8 +7,8 @@ use crate::blocks::{Block, BlockState};
 use crate::constants::{ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED};
 use crate::items::{Item, ItemState};
 use crate::player::{HeldObject, Player};
-use macroquad::prelude::{get_frame_time, Rect, Vec2, vec2};
-use ::rand::{thread_rng, Rng};
+use ::rand::{Rng, thread_rng};
+use macroquad::prelude::{Rect, Vec2, get_frame_time, vec2};
 
 /// Resolves collisions between the player and the level, including boundaries, platforms, and blocks.
 pub fn resolve_player_collisions(
@@ -203,15 +203,12 @@ pub fn resolve_baddie_collisions(
 
         // If there is no ground ahead, randomly decide whether to change direction or fall.
         if !ground_ahead {
-            if thread_rng().gen_bool(0.5) {
+            if thread_rng().gen_bool(0.1) {
                 baddie.change_direction();
             }
         }
     }
 }
-
-
-
 
 /// Resolves collisions for a single item with the level and blocks.
 pub fn resolve_item_collisions(
