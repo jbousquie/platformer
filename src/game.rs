@@ -206,6 +206,14 @@ impl Game {
 
         self.camera.update(&self.player);
 
+        // --- Player vs. Baddie Collision ---
+        for baddie in &self.baddies {
+            if self.player.rect().overlaps(&baddie.rect()) {
+                println!("Game Over! Player collided with a baddie.");
+                std::process::exit(0);
+            }
+        }
+
         // --- Game Over Condition ---
         // Check for collision between the player and any thrown item.
         for item in &self.level.items {
@@ -269,7 +277,7 @@ fn process_interactions(player: &mut Player, items: &mut [Item], blocks: &mut [B
                 item.state = ItemState::Thrown;
                 item.on_ground = false;
                 let dir = if player.facing_right { 1.0 } else { -1.0 };
-                item.velocity = vec2(dir, -1.0).normalize() * ITEM_THROW_SPEED;
+                item.velocity = player.velocity + vec2(dir, -1.0).normalize() * ITEM_THROW_SPEED;
                 player.held_object = None;
             } else {
                 // Keep item hooked to player
