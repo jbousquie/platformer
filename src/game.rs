@@ -169,6 +169,41 @@ impl Game {
             );
         }
 
+        // --- Baddie vs. Thrown Item Collisions ---
+        // When a thrown item hits a baddie, remove both.
+        let mut baddies_hit_mask = vec![false; self.baddies.len()];
+        let mut items_hit_mask = vec![false; self.level.items.len()];
+
+        for (item_idx, item) in self.level.items.iter().enumerate() {
+            if item.state == ItemState::Thrown {
+                for (baddie_idx, baddie) in self.baddies.iter().enumerate() {
+                    // Check if the baddie hasn't already been marked for removal by another item
+                    if !baddies_hit_mask[baddie_idx] && baddie.rect().overlaps(&item.rect()) {
+                        baddies_hit_mask[baddie_idx] = true;
+                        items_hit_mask[item_idx] = true;
+                        // An item is consumed upon hitting a baddie and cannot hit another in the same frame.
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Remove baddies that were hit using the mask.
+        let mut i = 0;
+        self.baddies.retain(|_| {
+            let keep = !baddies_hit_mask[i];
+            i += 1;
+            keep
+        });
+
+        // Remove items that hit a baddie using the mask.
+        i = 0;
+        self.level.items.retain(|_| {
+            let keep = !items_hit_mask[i];
+            i += 1;
+            keep
+        });
+
         self.camera.update(&self.player);
 
         // --- Game Over Condition ---
