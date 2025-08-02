@@ -112,18 +112,31 @@ fn update(game: &mut Game, dt: f32) {
     // --- Baddie Updates ---
     // After all block mutations are done, we can safely create a new immutable borrow
     // of the entire `blocks` slice to check for baddie collisions.
-    let blocks = game.level.blocks.as_slice();
     for baddie in game.baddies.iter_mut() {
         baddie.update(dt);
         physics::resolve_baddie_collisions(
             baddie,
             platforms,
-            blocks,
+            &mut game.level.blocks,
             ground,
             left_wall,
             right_wall,
             ceiling,
         );
+    }
+
+    // Update block positions for baddies that are holding them
+    for baddie in &game.baddies {
+        if let Some(block_id) = baddie.grabbed_block_id {
+            if let Some(block) = game.level.blocks.get_mut(block_id) {
+                block.position = baddie.position;
+                if baddie.facing_right {
+                    block.position.x += baddie.size.x;
+                } else {
+                    block.position.x -= block.size.x;
+                }
+            }
+        }
     }
 
     // --- Baddie vs. Thrown Item Collisions ---
@@ -138,6 +151,14 @@ fn update(game: &mut Game, dt: f32) {
                 if !baddies_hit_mask[baddie_idx] && baddie.rect().overlaps(&item.rect()) {
                     baddies_hit_mask[baddie_idx] = true;
                     items_hit_mask[item_idx] = true;
+
+                    // If the baddie was holding a block, drop it.
+                    if let Some(block_id) = baddie.grabbed_block_id {
+                        if let Some(block) = game.level.blocks.get_mut(block_id) {
+                            block.state = BlockState::Idle;
+                        }
+                    }
+
                     // An item is consumed upon hitting a baddie and cannot hit another in the same frame.
                     break;
                 }

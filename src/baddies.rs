@@ -17,6 +17,7 @@ pub enum BaddieState {
     Run,
     Jump,
     Fall,
+    Grab,
     Elevation,
 }
 
@@ -31,6 +32,8 @@ pub struct Baddie {
     pub on_ground_frames: u32,
     pub elevation_x_axis: f32,
     pub elevation_time: f32,
+    pub grabbed_block_id: Option<usize>,
+    pub grab_timer: f32,
 }
 
 impl Baddie {
@@ -46,6 +49,8 @@ impl Baddie {
             on_ground_frames: 0,
             elevation_x_axis: 0.0,
             elevation_time: 0.0,
+            grabbed_block_id: None,
+            grab_timer: 0.0,
         }
     }
 
@@ -63,6 +68,17 @@ impl Baddie {
             self.position.x = self.elevation_x_axis
                 + (self.elevation_time * BADDIE_ELEVATION_SINE_FREQUENCY).sin()
                     * BADDIE_ELEVATION_SINE_AMPLITUDE;
+        } else if self.state == BaddieState::Grab {
+            self.velocity.x = if self.facing_right {
+                BADDIE_SPEED
+            } else {
+                -BADDIE_SPEED
+            };
+            self.grab_timer -= dt;
+            if self.grab_timer <= 0.0 {
+                self.grabbed_block_id = None;
+                self.state = BaddieState::Idle;
+            }
         } else {
             // Apply gravity
             self.velocity.y += GRAVITY * dt;
@@ -88,13 +104,17 @@ impl Baddie {
         if self.on_ground {
             self.on_ground_frames += 1;
             if self.velocity.x.abs() > 0.1 {
-                self.state = BaddieState::Run;
+                if self.state != BaddieState::Grab {
+                    self.state = BaddieState::Run;
+                }
             } else {
-                self.state = BaddieState::Idle;
+                if self.state != BaddieState::Grab {
+                    self.state = BaddieState::Idle;
+                }
             }
         } else {
             self.on_ground_frames = 0;
-            if self.state != BaddieState::Elevation {
+            if self.state != BaddieState::Elevation && self.state != BaddieState::Grab {
                 if self.velocity.y < 0. {
                     self.state = BaddieState::Jump;
                 } else {

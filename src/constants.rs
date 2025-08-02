@@ -32,6 +32,9 @@ pub const BADDIE_ELEVATION_THRESHOLD: u32 = 2000;
 pub const BADDIE_ELEVATION_SPEED: f32 = -150.0;
 pub const BADDIE_ELEVATION_SINE_AMPLITUDE: f32 = 40.0;
 pub const BADDIE_ELEVATION_SINE_FREQUENCY: f32 = 4.0;
+pub const BADDIE_GRAB_CHANCE: f32 = 0.05;
+pub const BADDIE_MIN_GRAB_DURATION: f32 = 3.0;
+pub const BADDIE_MAX_GRAB_DURATION: f32 = 10.0;
 
 // --- Colors
 pub const PLAYER_COLOR: Color = Color::new(1.0, 1.0, 1.0, 1.0); // WHITE

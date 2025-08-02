@@ -4,7 +4,10 @@
 
 use crate::baddies::{Baddie, BaddieState};
 use crate::blocks::{Block, BlockState};
-use crate::constants::{ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED};
+use crate::constants::{
+    BADDIE_GRAB_CHANCE, BADDIE_MAX_GRAB_DURATION, BADDIE_MIN_GRAB_DURATION,
+    ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED,
+};
 use crate::items::{Item, ItemState};
 use crate::player::{HeldObject, Player};
 use ::rand::{thread_rng, Rng};
@@ -55,7 +58,7 @@ pub fn resolve_player_collisions(
     // Create a unified list of all solid surfaces the player can land on.
     let mut surfaces = platforms.to_vec();
     surfaces.push(*ground);
-    for block in blocks {
+    for block in blocks.iter() {
         if block.state == BlockState::Idle {
             surfaces.push(block.rect());
         }
@@ -79,7 +82,7 @@ pub fn resolve_player_collisions(
 
     // --- Player vs. Blocks (Side Collisions) ---
     // Handle horizontal collisions with blocks separately to prevent pushing.
-    for block in blocks {
+    for block in blocks.iter() {
         if block.state == BlockState::Idle {
             let player_rect = player.rect();
             let block_rect = block.rect();
@@ -109,7 +112,7 @@ pub fn resolve_player_collisions(
 pub fn resolve_baddie_collisions(
     baddie: &mut Baddie,
     platforms: &[Rect],
-    blocks: &[Block],
+    blocks: &mut [Block],
     ground: &Rect,
     left_wall: &Rect,
     right_wall: &Rect,
@@ -117,15 +120,24 @@ pub fn resolve_baddie_collisions(
 ) {
     baddie.on_ground = false;
 
+    let held_block_width = if let Some(block_id) = baddie.grabbed_block_id {
+        blocks[block_id].size.x
+    } else {
+        0.0
+    };
+
     // --- Baddie vs. Walls ---
     // Reverse direction upon hitting a wall.
-    if baddie.rect().right() > right_wall.left() {
-        baddie.position.x = right_wall.left() - baddie.size.x;
-        baddie.change_direction();
-    }
-    if baddie.rect().left() < left_wall.right() {
-        baddie.position.x = left_wall.right();
-        baddie.change_direction();
+    if baddie.facing_right {
+        if baddie.rect().right() + held_block_width > right_wall.left() {
+            baddie.position.x = right_wall.left() - baddie.size.x - held_block_width;
+            baddie.change_direction();
+        }
+    } else {
+        if baddie.rect().left() - held_block_width < left_wall.right() {
+            baddie.position.x = left_wall.right() + held_block_width;
+            baddie.change_direction();
+        }
     }
 
     // --- Baddie vs. Ceiling ---
@@ -141,7 +153,7 @@ pub fn resolve_baddie_collisions(
         // Create a unified list of all solid surfaces the baddie can land on.
         let mut surfaces = platforms.to_vec();
         surfaces.push(*ground);
-        for block in blocks {
+        for block in blocks.iter() {
             if block.state == BlockState::Idle {
                 surfaces.push(block.rect());
             }
@@ -164,7 +176,7 @@ pub fn resolve_baddie_collisions(
 
         // --- Baddie vs. Blocks (Side Collisions) ---
         // Handle horizontal collisions with blocks.
-        for block in blocks {
+        for (i, block) in blocks.iter_mut().enumerate() {
             if block.state == BlockState::Idle {
                 let baddie_rect = baddie.rect();
                 let block_rect = block.rect();
@@ -179,14 +191,30 @@ pub fn resolve_baddie_collisions(
                         && baddie_rect.right() > block_rect.left()
                     {
                         baddie.position.x = block_rect.left() - baddie.size.x;
-                        baddie.change_direction();
+                        if thread_rng().gen_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
+                            baddie.state = BaddieState::Grab;
+                            baddie.grabbed_block_id = Some(i);
+                            baddie.grab_timer = thread_rng()
+                                .gen_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
+                            block.state = BlockState::Hooked;
+                        } else {
+                            baddie.change_direction();
+                        }
                     }
                     // Collision from the right.
                     else if previous_baddie_left >= block_rect.right()
                         && baddie_rect.left() < block_rect.right()
                     {
                         baddie.position.x = block_rect.right();
-                        baddie.change_direction();
+                        if thread_rng().gen_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
+                            baddie.state = BaddieState::Grab;
+                            baddie.grabbed_block_id = Some(i);
+                            baddie.grab_timer = thread_rng()
+                                .gen_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
+                            block.state = BlockState::Hooked;
+                        } else {
+                            baddie.change_direction();
+                        }
                     }
                 }
             }
@@ -247,7 +275,7 @@ pub fn resolve_item_collisions(
     // Combine all solid objects for collision detection
     let mut colliders = platforms.to_vec();
     colliders.push(*ground);
-    for block in blocks {
+    for block in blocks.iter() {
         if block.state == BlockState::Idle {
             colliders.push(block.rect());
         }

@@ -12,6 +12,7 @@ This is a 2D platformer game built in Rust using the `macroquad` game library.
 ## Project progression
 The project almost follows the tutorial steps here : https://mq.agical.se/index.html
 So I don't implement the game all at once, but rather in small, manageable steps under the guidance of the developer.
+I don't run the game to test it, I just build it.
 I carefully read the Macroquad documentation here : https://macroquad.rs/docs/
 
 ## Game Mechanics
@@ -28,6 +29,9 @@ Baddies are simple enemies that currently do not interact with the player. Their
 - They have a random chance of jumping.
 - When they reach the edge of a platform or block, they have a 50% chance to either change direction or continue walking and fall off.
 - They collide with walls and blocks, changing direction upon impact.
+- Upon colliding with a block, they have a 5% chance to grab it.
+- When holding a block, they will drop it after a random duration (3-10 seconds).
+- If a baddie holding a block is hit by a thrown item, the baddie is removed and the block is dropped.
 
 ## Project Structure
 
