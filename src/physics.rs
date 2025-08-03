@@ -10,8 +10,8 @@ use crate::constants::{
 };
 use crate::items::{Item, ItemState};
 use crate::player::{HeldObject, Player};
-use ::rand::{thread_rng, Rng};
-use macroquad::prelude::{get_frame_time, vec2, Rect, Vec2};
+use ::rand::{Rng, rng};
+use macroquad::prelude::{Rect, Vec2, get_frame_time, vec2};
 
 /// Resolves collisions between the player and the level, including boundaries, platforms, and blocks.
 pub fn resolve_player_collisions(
@@ -191,11 +191,11 @@ pub fn resolve_baddie_collisions(
                         && baddie_rect.right() > block_rect.left()
                     {
                         baddie.position.x = block_rect.left() - baddie.size.x;
-                        if thread_rng().gen_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
+                        if rng().random_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
                             baddie.state = BaddieState::Grab;
                             baddie.grabbed_block_id = Some(i);
-                            baddie.grab_timer = thread_rng()
-                                .gen_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
+                            baddie.grab_timer = rng()
+                                .random_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
                             block.state = BlockState::Hooked;
                         } else {
                             baddie.change_direction();
@@ -206,11 +206,11 @@ pub fn resolve_baddie_collisions(
                         && baddie_rect.left() < block_rect.right()
                     {
                         baddie.position.x = block_rect.right();
-                        if thread_rng().gen_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
+                        if rng().random_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
                             baddie.state = BaddieState::Grab;
                             baddie.grabbed_block_id = Some(i);
-                            baddie.grab_timer = thread_rng()
-                                .gen_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
+                            baddie.grab_timer = rng()
+                                .random_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
                             block.state = BlockState::Hooked;
                         } else {
                             baddie.change_direction();
@@ -242,7 +242,7 @@ pub fn resolve_baddie_collisions(
 
             // If there is no ground ahead, randomly decide whether to change direction or fall.
             if !ground_ahead {
-                if thread_rng().gen_bool(0.1) {
+                if rng().random_bool(0.1) {
                     baddie.change_direction();
                 }
             }

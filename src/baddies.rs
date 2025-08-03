@@ -7,7 +7,7 @@ use crate::constants::{
     BADDIE_ELEVATION_SPEED, BADDIE_ELEVATION_THRESHOLD, BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE,
     BADDIE_SIZE, BADDIE_SPEED, GRAVITY,
 };
-use ::rand::{thread_rng, Rng};
+use ::rand::{Rng, rng};
 use macroquad::prelude::*;
 
 /// Represents the different states a baddie can be in.
@@ -45,7 +45,7 @@ impl Baddie {
             velocity: vec2(BADDIE_SPEED, 0.),
             on_ground: false,
             state: BaddieState::Run,
-            facing_right: thread_rng().gen_bool(0.5),
+            facing_right: rng().random_bool(0.5),
             on_ground_frames: 0,
             elevation_x_axis: 0.0,
             elevation_time: 0.0,
@@ -91,7 +91,7 @@ impl Baddie {
             };
 
             // Randomly jump if on the ground
-            if self.on_ground && thread_rng().gen_range(0.0..1.0) < BADDIE_JUMP_CHANCE {
+            if self.on_ground && rng().random_range(0.0..1.0) < BADDIE_JUMP_CHANCE {
                 self.velocity.y = -BADDIE_JUMP_FORCE;
                 self.on_ground = false;
             }

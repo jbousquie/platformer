@@ -5,10 +5,10 @@
 use crate::baddies::Baddie;
 use crate::camera::Camera;
 use crate::constants::MAX_BADDIES;
-use crate::game_states::{GameState, self};
-use crate::level::{Level, LEVEL_HEIGHT, LEVEL_WIDTH};
+use crate::game_states::{self, GameState};
+use crate::level::{LEVEL_HEIGHT, LEVEL_WIDTH, Level};
 use crate::player::Player;
-use ::rand::{thread_rng, Rng};
+use ::rand::{Rng, rng};
 use macroquad::prelude::*;
 
 /// Represents the main game state.
@@ -29,7 +29,7 @@ impl Game {
         let mut baddies = Vec::new();
 
         for _ in 0..MAX_BADDIES {
-            let x = thread_rng().gen_range(0.0..LEVEL_WIDTH);
+            let x = rng().random_range(0.0..LEVEL_WIDTH);
             let y = LEVEL_HEIGHT / 2.0;
             baddies.push(Baddie::new(vec2(x, y)));
         }
