@@ -35,6 +35,9 @@ pub const BADDIE_ELEVATION_SINE_FREQUENCY: f32 = 4.0;
 pub const BADDIE_GRAB_CHANCE: f32 = 0.05;
 pub const BADDIE_MIN_GRAB_DURATION: f32 = 3.0;
 pub const BADDIE_MAX_GRAB_DURATION: f32 = 10.0;
+pub const BADDIE_MIN_ITEM_HOLD_DURATION: f32 = 1.0;
+pub const BADDIE_MAX_ITEM_HOLD_DURATION: f32 = 2.0;
+pub const BADDIE_GRAB_ITEM_CHANCE: f32 = 0.6;
 
 // --- Colors
 pub const PLAYER_COLOR: Color = Color::new(1.0, 1.0, 1.0, 1.0); // WHITE

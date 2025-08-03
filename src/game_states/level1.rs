@@ -2,7 +2,14 @@ use std::time::Instant;
 
 use macroquad::prelude::*;
 
-use crate::{blocks::BlockState, game::Game, game_states::GameState, items::ItemState, physics};
+use crate::{
+    blocks::BlockState,
+    game::Game,
+    game_states::GameState,
+    items::ItemState,
+    physics,
+    player::{HeldObject},
+};
 
 use crate::constants::BACKGROUND_COLOR;
 
@@ -37,9 +44,8 @@ fn update(game: &mut Game, dt: f32) {
     // mutable and immutable borrows of `self.level.blocks`.
 
     // Destructure level components into immutable slices for collision checks that don't require mutation.
-    let (platforms, items, ground, left_wall, right_wall, ceiling) = (
+    let (platforms, ground, left_wall, right_wall, ceiling) = (
         game.level.platforms.as_slice(),
-        game.level.items.as_slice(),
         &game.level.ground,
         &game.level.left_wall,
         &game.level.right_wall,
@@ -53,7 +59,7 @@ fn update(game: &mut Game, dt: f32) {
     physics::resolve_player_collisions(
         &mut game.player,
         platforms,
-        items,
+        &game.level.items,
         blocks,
         ground,
         left_wall,
@@ -62,7 +68,7 @@ fn update(game: &mut Game, dt: f32) {
     );
 
     // Update items, which also use the immutable block slice for collision checks.
-    for item in game.level.items.iter_mut() {
+    for (i, item) in game.level.items.iter_mut().enumerate() {
         if item.state != ItemState::Hooked {
             if !item.on_ground {
                 item.update(dt);
@@ -71,7 +77,23 @@ fn update(game: &mut Game, dt: f32) {
                 );
             }
         } else {
-            if game.player.held_object.is_none() {
+            let mut is_held = false;
+            if let Some(HeldObject::Item(id)) = game.player.held_object {
+                if id == i {
+                    is_held = true;
+                }
+            }
+            if !is_held {
+                for baddie in &game.baddies {
+                    if let Some(id) = baddie.held_item_id {
+                        if id == i {
+                            is_held = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if !is_held {
                 item.state = ItemState::Idle;
             }
         }
@@ -114,10 +136,12 @@ fn update(game: &mut Game, dt: f32) {
     // of the entire `blocks` slice to check for baddie collisions.
     for baddie in game.baddies.iter_mut() {
         baddie.update(dt);
+        baddie.process_interactions(&mut game.level.items, game.player.position);
         physics::resolve_baddie_collisions(
             baddie,
             platforms,
             &mut game.level.blocks,
+            &mut game.level.items,
             ground,
             left_wall,
             right_wall,
@@ -143,6 +167,7 @@ fn update(game: &mut Game, dt: f32) {
     // When a thrown item hits a baddie, remove both.
     let mut baddies_hit_mask = vec![false; game.baddies.len()];
     let mut items_hit_mask = vec![false; game.level.items.len()];
+    let mut items_to_drop: Vec<usize> = Vec::new();
 
     for (item_idx, item) in game.level.items.iter().enumerate() {
         if item.state == ItemState::Thrown {
@@ -159,10 +184,21 @@ fn update(game: &mut Game, dt: f32) {
                         }
                     }
 
+                    // If the baddie was holding an item, drop it.
+                    if let Some(item_id) = baddie.held_item_id {
+                        items_to_drop.push(item_id);
+                    }
+
                     // An item is consumed upon hitting a baddie and cannot hit another in the same frame.
                     break;
                 }
             }
+        }
+    }
+
+    for item_id in items_to_drop {
+        if let Some(item) = game.level.items.get_mut(item_id) {
+            item.state = ItemState::Idle;
         }
     }
 

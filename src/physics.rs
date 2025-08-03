@@ -5,13 +5,14 @@
 use crate::baddies::{Baddie, BaddieState};
 use crate::blocks::{Block, BlockState};
 use crate::constants::{
-    BADDIE_GRAB_CHANCE, BADDIE_MAX_GRAB_DURATION, BADDIE_MIN_GRAB_DURATION,
+    BADDIE_GRAB_CHANCE, BADDIE_GRAB_ITEM_CHANCE, BADDIE_MAX_GRAB_DURATION,
+    BADDIE_MAX_ITEM_HOLD_DURATION, BADDIE_MIN_GRAB_DURATION, BADDIE_MIN_ITEM_HOLD_DURATION,
     ITEM_BOUNCE_ENERGY_LOSS, ITEM_MIN_BOUNCE_SPEED,
 };
 use crate::items::{Item, ItemState};
 use crate::player::{HeldObject, Player};
-use ::rand::{Rng, rng};
-use macroquad::prelude::{Rect, Vec2, get_frame_time, vec2};
+use ::rand::{rng, Rng};
+use macroquad::prelude::{get_frame_time, vec2, Rect, Vec2};
 
 /// Resolves collisions between the player and the level, including boundaries, platforms, and blocks.
 pub fn resolve_player_collisions(
@@ -113,6 +114,7 @@ pub fn resolve_baddie_collisions(
     baddie: &mut Baddie,
     platforms: &[Rect],
     blocks: &mut [Block],
+    items: &mut [Item],
     ground: &Rect,
     left_wall: &Rect,
     right_wall: &Rect,
@@ -121,21 +123,29 @@ pub fn resolve_baddie_collisions(
     baddie.on_ground = false;
 
     let held_block_width = if let Some(block_id) = baddie.grabbed_block_id {
-        blocks[block_id].size.x
+        blocks.get(block_id).map_or(0.0, |b| b.size.x)
     } else {
         0.0
     };
 
+    let held_item_width = if let Some(item_id) = baddie.held_item_id {
+        items.get(item_id).map_or(0.0, |i| i.size.x)
+    } else {
+        0.0
+    };
+
+    let held_object_width = held_block_width + held_item_width;
+
     // --- Baddie vs. Walls ---
     // Reverse direction upon hitting a wall.
     if baddie.facing_right {
-        if baddie.rect().right() + held_block_width > right_wall.left() {
-            baddie.position.x = right_wall.left() - baddie.size.x - held_block_width;
+        if baddie.rect().right() + held_object_width > right_wall.left() {
+            baddie.position.x = right_wall.left() - baddie.size.x - held_object_width;
             baddie.change_direction();
         }
     } else {
-        if baddie.rect().left() - held_block_width < left_wall.right() {
-            baddie.position.x = left_wall.right() + held_block_width;
+        if baddie.rect().left() - held_object_width < left_wall.right() {
+            baddie.position.x = left_wall.right() + held_object_width;
             baddie.change_direction();
         }
     }
@@ -191,10 +201,13 @@ pub fn resolve_baddie_collisions(
                         && baddie_rect.right() > block_rect.left()
                     {
                         baddie.position.x = block_rect.left() - baddie.size.x;
-                        if rng().random_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
+                        if baddie.held_item_id.is_none()
+                            && baddie.grabbed_block_id.is_none()
+                            && rng().random_range(0.0..1.0) < BADDIE_GRAB_CHANCE
+                        {
                             baddie.state = BaddieState::Grab;
                             baddie.grabbed_block_id = Some(i);
-                            baddie.grab_timer = rng()
+                            baddie.block_grab_timer = rng()
                                 .random_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
                             block.state = BlockState::Hooked;
                         } else {
@@ -206,15 +219,37 @@ pub fn resolve_baddie_collisions(
                         && baddie_rect.left() < block_rect.right()
                     {
                         baddie.position.x = block_rect.right();
-                        if rng().random_range(0.0..1.0) < BADDIE_GRAB_CHANCE {
+                        if baddie.held_item_id.is_none()
+                            && baddie.grabbed_block_id.is_none()
+                            && rng().random_range(0.0..1.0) < BADDIE_GRAB_CHANCE
+                        {
                             baddie.state = BaddieState::Grab;
                             baddie.grabbed_block_id = Some(i);
-                            baddie.grab_timer = rng()
+                            baddie.block_grab_timer = rng()
                                 .random_range(BADDIE_MIN_GRAB_DURATION..BADDIE_MAX_GRAB_DURATION);
                             block.state = BlockState::Hooked;
                         } else {
                             baddie.change_direction();
                         }
+                    }
+                }
+            }
+        }
+
+        // --- Baddie vs. Items ---
+        if baddie.held_item_id.is_none() && baddie.grabbed_block_id.is_none() {
+            for (i, item) in items.iter_mut().enumerate() {
+                if item.state == ItemState::Idle
+                    && item.on_ground
+                    && baddie.rect().overlaps(&item.rect())
+                {
+                    if rng().random_range(0.0..1.0) < BADDIE_GRAB_ITEM_CHANCE {
+                        item.state = ItemState::Hooked;
+                        baddie.held_item_id = Some(i);
+                        baddie.item_hold_timer = rng().random_range(
+                            BADDIE_MIN_ITEM_HOLD_DURATION..BADDIE_MAX_ITEM_HOLD_DURATION,
+                        );
+                        break;
                     }
                 }
             }

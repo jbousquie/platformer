@@ -5,9 +5,10 @@
 use crate::constants::{
     BADDIE_COLOR, BADDIE_ELEVATION_SINE_AMPLITUDE, BADDIE_ELEVATION_SINE_FREQUENCY,
     BADDIE_ELEVATION_SPEED, BADDIE_ELEVATION_THRESHOLD, BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE,
-    BADDIE_SIZE, BADDIE_SPEED, GRAVITY,
+    BADDIE_SIZE, BADDIE_SPEED, GRAVITY, ITEM_THROW_SPEED,
 };
-use ::rand::{Rng, rng};
+use crate::items::{Item, ItemState};
+use ::rand::{rng, Rng};
 use macroquad::prelude::*;
 
 /// Represents the different states a baddie can be in.
@@ -33,7 +34,9 @@ pub struct Baddie {
     pub elevation_x_axis: f32,
     pub elevation_time: f32,
     pub grabbed_block_id: Option<usize>,
-    pub grab_timer: f32,
+    pub held_item_id: Option<usize>,
+    pub block_grab_timer: f32,
+    pub item_hold_timer: f32,
 }
 
 impl Baddie {
@@ -50,7 +53,9 @@ impl Baddie {
             elevation_x_axis: 0.0,
             elevation_time: 0.0,
             grabbed_block_id: None,
-            grab_timer: 0.0,
+            held_item_id: None,
+            block_grab_timer: 0.0,
+            item_hold_timer: 0.0,
         }
     }
 
@@ -74,8 +79,8 @@ impl Baddie {
             } else {
                 -BADDIE_SPEED
             };
-            self.grab_timer -= dt;
-            if self.grab_timer <= 0.0 {
+            self.block_grab_timer -= dt;
+            if self.block_grab_timer <= 0.0 {
                 self.grabbed_block_id = None;
                 self.state = BaddieState::Idle;
             }
@@ -95,6 +100,10 @@ impl Baddie {
                 self.velocity.y = -BADDIE_JUMP_FORCE;
                 self.on_ground = false;
             }
+        }
+
+        if self.held_item_id.is_some() {
+            self.item_hold_timer -= dt;
         }
 
         // Update position
@@ -144,5 +153,45 @@ impl Baddie {
     /// Reverses the baddie's horizontal direction.
     pub fn change_direction(&mut self) {
         self.facing_right = !self.facing_right;
+    }
+
+    /// Handles baddie interactions with items (grabbing, throwing).
+    pub fn process_interactions(&mut self, items: &mut [Item], player_pos: Vec2) {
+        if let Some(item_id) = self.held_item_id {
+            // First, ensure the item ID is valid. If not, the item has been removed,
+            // so the baddie should drop its reference to it.
+            if item_id >= items.len() {
+                self.held_item_id = None;
+                return;
+            }
+
+            // Check if the hold timer has elapsed.
+            if self.item_hold_timer <= 0.0 {
+                // If the timer is up, check if the baddie is facing the player.
+                let player_is_to_right = player_pos.x > self.position.x;
+                let baddie_is_facing_player = self.facing_right == player_is_to_right;
+
+                if baddie_is_facing_player {
+                    // If both conditions are met, throw the item.
+                    let item = &mut items[item_id];
+                    item.state = ItemState::Thrown;
+                    item.on_ground = false;
+                    let dir = if self.facing_right { 1.0 } else { -1.0 };
+                    item.velocity = self.velocity + vec2(dir, -1.0).normalize() * ITEM_THROW_SPEED;
+                    self.held_item_id = None;
+                    return; // Exit early, as the item has been thrown.
+                }
+            }
+
+            // If the item wasn't thrown (either because the timer isn't up or the
+            // baddie isn't facing the player), keep it hooked.
+            let item = &mut items[item_id];
+            item.position.y = self.position.y;
+            item.position.x = if self.facing_right {
+                self.position.x + self.size.x
+            } else {
+                self.position.x - item.size.x
+            };
+        }
     }
 }
