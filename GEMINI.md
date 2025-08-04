@@ -42,7 +42,7 @@ The project is organized into several modules, each responsible for a specific p
 - **`game_states/`**: This directory holds the logic for the different states or screens of the game.
     - **`mod.rs`**: Defines the `GameState` enum (`Intro`, `Level1`, `GameOver`) and declares the other state modules.
     - **`intro.rs`**: Handles the title screen logic, waiting for the user to start the game.
-    - **`level1.rs`**: Contains all the logic for the main gameplay, including updating the player, baddies, and items, handling physics and collisions, and drawing the world.
+    - **`level1.rs`**: Contains all the logic for the main gameplay. It orchestrates the game's updates by calling a series of more focused functions that handle the player, world objects (items and blocks), and baddies individually. It also manages camera updates and checks for game-over conditions.
     - **`game_over.rs`**: Manages the game-over screen, waiting for the user to restart.
 - **`player.rs`**: Defines the `Player` character. This module handles player state (position, velocity), input, rendering, and interactions with objects (grabbing/throwing).
 - **`items.rs`**: Defines the `Item` struct and its behavior.

@@ -35,6 +35,30 @@ pub async fn run_level1(game: &mut Game) {
 
 /// Updates the game state for the current frame.
 fn update(game: &mut Game, dt: f32) {
+    update_player_and_collisions(game, dt);
+    update_world_objects(game, dt);
+    update_baddies_and_collisions(game, dt);
+
+    game.camera.update(&game.player);
+
+    // --- Player vs. Baddie Collision ---
+    for baddie in &game.baddies {
+        if game.player.rect().overlaps(&baddie.rect()) {
+            game.gamestate = GameState::GameOver;
+        }
+    }
+
+    // --- Game Over Condition ---
+    // Check for collision between the player and any thrown item.
+    for item in &game.level.items {
+        if item.state == ItemState::Thrown && game.player.rect().overlaps(&item.rect()) {
+            game.gamestate = GameState::GameOver;
+        }
+    }
+}
+
+/// Handles the player's movement, interactions, and physics collisions.
+fn update_player_and_collisions(game: &mut Game, dt: f32) {
     game.player.update(dt);
     // Player interactions can modify items and blocks, so it needs mutable access.
     game.player
@@ -67,6 +91,21 @@ fn update(game: &mut Game, dt: f32) {
         right_wall,
         ceiling,
     );
+}
+
+/// Handles the updates and physics for all non-character objects in the world (items and blocks).
+fn update_world_objects(game: &mut Game, dt: f32) {
+    // Destructure level components into immutable slices for collision checks that don't require mutation.
+    let (platforms, ground, left_wall, right_wall, _ceiling) = (
+        game.level.platforms.as_slice(),
+        &game.level.ground,
+        &game.level.left_wall,
+        &game.level.right_wall,
+        &game.level.ceiling,
+    );
+
+    // Create an immutable borrow of blocks to pass to functions that only need to read block data.
+    let blocks = game.level.blocks.as_slice();
 
     // Update items, which also use the immutable block slice for collision checks.
     for (i, item) in game.level.items.iter_mut().enumerate() {
@@ -131,6 +170,18 @@ fn update(game: &mut Game, dt: f32) {
             }
         }
     }
+}
+
+/// Handles baddie movement, interactions, and collisions, including their interactions with thrown items.
+fn update_baddies_and_collisions(game: &mut Game, dt: f32) {
+    // Destructure level components into immutable slices for collision checks that don't require mutation.
+    let (platforms, ground, left_wall, right_wall, ceiling) = (
+        game.level.platforms.as_slice(),
+        &game.level.ground,
+        &game.level.left_wall,
+        &game.level.right_wall,
+        &game.level.ceiling,
+    );
 
     // --- Baddie Updates ---
     // After all block mutations are done, we can safely create a new immutable borrow
@@ -219,23 +270,6 @@ fn update(game: &mut Game, dt: f32) {
         i += 1;
         keep
     });
-
-    game.camera.update(&game.player);
-
-    // --- Player vs. Baddie Collision ---
-    for baddie in &game.baddies {
-        if game.player.rect().overlaps(&baddie.rect()) {
-            game.gamestate = GameState::GameOver;
-        }
-    }
-
-    // --- Game Over Condition ---
-    // Check for collision between the player and any thrown item.
-    for item in &game.level.items {
-        if item.state == ItemState::Thrown && game.player.rect().overlaps(&item.rect()) {
-            game.gamestate = GameState::GameOver;
-        }
-    }
 }
 
 /// Draws the game world.
