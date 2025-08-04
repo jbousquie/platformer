@@ -4,11 +4,12 @@ use macroquad::prelude::*;
 
 use crate::{
     blocks::BlockState,
+    constants::BLOCK_OFFSET,
     game::Game,
     game_states::GameState,
     items::ItemState,
     physics,
-    player::{HeldObject},
+    player::HeldObject,
 };
 
 use crate::constants::BACKGROUND_COLOR;
@@ -154,6 +155,7 @@ fn update(game: &mut Game, dt: f32) {
         if let Some(block_id) = baddie.grabbed_block_id {
             if let Some(block) = game.level.blocks.get_mut(block_id) {
                 block.position = baddie.position;
+                block.position.y -= BLOCK_OFFSET;
                 if baddie.facing_right {
                     block.position.x += baddie.size.x;
                 } else {

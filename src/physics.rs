@@ -155,6 +155,7 @@ pub fn resolve_baddie_collisions(
         baddie.state = BaddieState::Idle;
         baddie.velocity.y = 0.;
         baddie.position.y = ceiling.bottom();
+        baddie.drop_held_object();
         return; // Exit early as no other collision checks are needed
     }
 

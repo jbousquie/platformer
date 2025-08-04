@@ -8,8 +8,8 @@ use crate::items::Item;
 use macroquad::prelude::*;
 use macroquad::rand;
 
-pub const LEVEL_WIDTH: f32 = 3. * 1024.;
-pub const LEVEL_HEIGHT: f32 = 3. * 768.;
+pub const LEVEL_WIDTH: f32 = 2. * 1024.;
+pub const LEVEL_HEIGHT: f32 = 2. * 768.;
 
 /// Represents the game level, including its boundaries and platforms.
 pub struct Level {
@@ -29,9 +29,9 @@ impl Level {
         let screen_width = 1024.;
         let screen_height = 768.;
 
-        for i in 0..3 {
+        for i in 0..2 {
             // columns
-            for j in 0..3 {
+            for j in 0..2 {
                 // rows
                 let offset_x = i as f32 * screen_width;
                 let offset_y = j as f32 * screen_height;

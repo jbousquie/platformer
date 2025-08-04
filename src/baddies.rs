@@ -3,9 +3,9 @@
 //! This module defines the baddie's behavior and properties.
 
 use crate::constants::{
-    BADDIE_COLOR, BADDIE_ELEVATION_SINE_AMPLITUDE, BADDIE_ELEVATION_SINE_FREQUENCY,
-    BADDIE_ELEVATION_SPEED, BADDIE_ELEVATION_THRESHOLD, BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE,
-    BADDIE_SIZE, BADDIE_SPEED, GRAVITY, ITEM_THROW_SPEED,
+    BADDIE_COLOR, BADDIE_ELEVATION_DROP_CHANCE, BADDIE_ELEVATION_SINE_AMPLITUDE,
+    BADDIE_ELEVATION_SINE_FREQUENCY, BADDIE_ELEVATION_SPEED, BADDIE_ELEVATION_THRESHOLD,
+    BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE, BADDIE_SIZE, BADDIE_SPEED, GRAVITY, ITEM_THROW_SPEED,
 };
 use crate::items::{Item, ItemState};
 use ::rand::{rng, Rng};
@@ -73,6 +73,12 @@ impl Baddie {
             self.position.x = self.elevation_x_axis
                 + (self.elevation_time * BADDIE_ELEVATION_SINE_FREQUENCY).sin()
                     * BADDIE_ELEVATION_SINE_AMPLITUDE;
+
+            if self.grabbed_block_id.is_some() || self.held_item_id.is_some() {
+                if rng().random_range(0.0..1.0) < BADDIE_ELEVATION_DROP_CHANCE {
+                    self.drop_held_object();
+                }
+            }
         } else if self.state == BaddieState::Grab {
             self.velocity.x = if self.facing_right {
                 BADDIE_SPEED
@@ -82,6 +88,7 @@ impl Baddie {
             self.block_grab_timer -= dt;
             if self.block_grab_timer <= 0.0 {
                 self.grabbed_block_id = None;
+                self.change_direction();
                 self.state = BaddieState::Idle;
             }
         } else {
@@ -148,6 +155,15 @@ impl Baddie {
             self.size.y,
             BADDIE_COLOR,
         );
+    }
+
+    pub fn drop_held_object(&mut self) {
+        if self.grabbed_block_id.is_some() {
+            self.grabbed_block_id = None;
+        }
+        if self.held_item_id.is_some() {
+            self.held_item_id = None;
+        }
     }
 
     /// Reverses the baddie's horizontal direction.
