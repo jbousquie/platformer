@@ -5,7 +5,8 @@
 use crate::constants::{
     BADDIE_COLOR, BADDIE_ELEVATION_DROP_CHANCE, BADDIE_ELEVATION_SINE_AMPLITUDE,
     BADDIE_ELEVATION_SINE_FREQUENCY, BADDIE_ELEVATION_SPEED, BADDIE_ELEVATION_THRESHOLD,
-    BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE, BADDIE_SIZE, BADDIE_SPEED, GRAVITY, ITEM_THROW_SPEED,
+    BADDIE_JUMP_CHANCE, BADDIE_JUMP_FORCE, BADDIE_SIZE, BADDIE_SPEED, GRAVITY,
+    ITEM_THROW_OFFSET, ITEM_THROW_SPEED,
 };
 use crate::items::{Item, ItemState};
 use ::rand::{rng, Rng};
@@ -194,6 +195,14 @@ impl Baddie {
                     item.on_ground = false;
                     let dir = if self.facing_right { 1.0 } else { -1.0 };
                     item.velocity = self.velocity + vec2(dir, -1.0).normalize() * ITEM_THROW_SPEED;
+
+                    // Offset the item's starting position to avoid immediate self-collision
+                    if self.facing_right {
+                        item.position.x = self.rect().right() + ITEM_THROW_OFFSET;
+                    } else {
+                        item.position.x = self.rect().left() - item.size.x - ITEM_THROW_OFFSET;
+                    }
+
                     self.held_item_id = None;
                     return; // Exit early, as the item has been thrown.
                 }

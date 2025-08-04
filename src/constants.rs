@@ -18,6 +18,8 @@ pub const WALL_WIDTH: f32 = 50.;
 pub const ITEM_SIZE: f32 = 25.0;
 pub const ITEM_COUNT: usize = 8;
 pub const ITEM_THROW_SPEED: f32 = 600.0;
+/// The small distance to offset a thrown item from the thrower to prevent immediate self-collision.
+pub const ITEM_THROW_OFFSET: f32 = 1.0;
 pub const ITEM_BOUNCE_ENERGY_LOSS: f32 = 0.7;
 pub const ITEM_MIN_BOUNCE_SPEED: f32 = 60.0;
 pub const BLOCK_SIZE: f32 = PLAYER_SIZE * 1.2;
