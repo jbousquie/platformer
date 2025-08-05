@@ -291,6 +291,9 @@ fn draw(game: &Game) {
     }
 
     set_default_camera();
+
+    let keys_collected = game.level.total_keys - game.level.keys.len() as u32;
+    game.gui.draw(keys_collected, game.level.total_keys);
 }
 
 /// Logs the average FPS to the console every `FPS_LOG_INTERVAL_FRAMES` frames.

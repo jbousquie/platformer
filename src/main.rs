@@ -8,6 +8,7 @@ mod camera;
 mod constants;
 mod game;
 mod game_states;
+mod gui;
 mod items;
 mod keys;
 mod level;

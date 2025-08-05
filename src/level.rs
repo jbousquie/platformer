@@ -22,6 +22,7 @@ pub struct Level {
     pub items: Vec<Item>,
     pub blocks: Vec<Block>,
     pub keys: Vec<Key>,
+    pub total_keys: u32,
 }
 
 impl Level {
@@ -111,6 +112,7 @@ impl Level {
                 ));
             }
         }
+        let total_keys = keys.len() as u32;
 
         Self {
             ground: Rect::new(0., LEVEL_HEIGHT - GROUND_HEIGHT, LEVEL_WIDTH, GROUND_HEIGHT),
@@ -121,6 +123,7 @@ impl Level {
             items,
             blocks,
             keys,
+            total_keys,
         }
     }
 

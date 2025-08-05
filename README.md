@@ -11,6 +11,14 @@ A attempt to create a platformer game using Rust and [macroquad](https://github.
 -   **Grab/Throw Items**: Press the `SPACE` key to grab a nearby item. Press `SPACE` again to throw it.
 -   **Grab/Release Blocks**: Press the `SPACE` key to grab a nearby block, or to release one you are holding. Blocks cannot be thrown.
 
+## GUI
+
+A simple GUI is displayed at the top of the screen, showing:
+- **Keys**: The number of keys collected out of the total.
+- **Score**: The player's score (placeholder).
+- **Lives**: The number of remaining lives (placeholder).
+
+
 ## Game Entities
 
 ### Baddies

@@ -6,6 +6,7 @@ use crate::baddies::Baddie;
 use crate::camera::Camera;
 use crate::constants::MAX_BADDIES;
 use crate::game_states::{self, GameState};
+use crate::gui::Gui;
 use crate::level::{LEVEL_HEIGHT, LEVEL_WIDTH, Level};
 use crate::player::Player;
 use ::rand::{Rng, rng};
@@ -18,6 +19,7 @@ pub struct Game {
     pub level: Level,
     pub camera: Camera,
     pub baddies: Vec<Baddie>,
+    pub gui: Gui,
 }
 
 impl Game {
@@ -26,6 +28,7 @@ impl Game {
         let player = Player::new();
         let level = Level::new().await;
         let camera = Camera::new();
+        let gui = Gui::new();
         let mut baddies = Vec::new();
 
         for _ in 0..MAX_BADDIES {
@@ -40,6 +43,7 @@ impl Game {
             level,
             camera,
             baddies,
+            gui,
         }
     }
 

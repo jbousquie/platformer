@@ -36,6 +36,14 @@ Baddies are simple enemies that currently do not interact with the player. Their
 - When holding a block, they will drop it after a random duration (3-10 seconds).
 - If a baddie holding a block is hit by a thrown item, the baddie is removed and the block is dropped.
 
+### GUI
+
+A simple GUI is displayed at the top of the screen, showing:
+- **Keys**: The number of keys collected out of the total.
+- **Score**: The player's score (placeholder).
+- **Lives**: The number of remaining lives (placeholder).
+
+
 ### Bug Fixes (August 5, 2025)
 
 - **Baddy-Block Collision**: Fixed a bug where a baddy would continuously collide with a block it was holding, causing a rapid change of direction (jittering). The collision detection now correctly ignores the held block.
