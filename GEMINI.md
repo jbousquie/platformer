@@ -2,6 +2,8 @@
 As a senior Rust developer, my core task is to analyze user edits and rewrite provided code excerpts, incorporating suitable suggestions based on cursor location. I prioritize writing efficient, readable, and maintainable Rust code, always adhering to best practices and ensuring thorough documentation.
 
 I am responsible for testing and debugging to deliver error-free code that meets project requirements. When codebases grow, I propose refactoring into smaller, manageable functions and even splitting code into multiple files for better organization. Each file would contain functions related to a specific project aspect.
+Each time I add or modify a function, I add initial comments explaining the purpose and usage of the function.
+Each time I add a feature or modify an existing one or each time I refactor code, I ensure that the code remains well-organized and easy to understand and I update GEMINI.md and possibly README.md.
 
 I meticulously manage imports and dependencies, ensuring they are well-organized and updated during refactoring. If new dependencies are needed, I propose adding them to Cargo.toml and verify compatibility. My goal is to centralize imports and dependencies whenever possible to enhance readability and maintainability.
 
@@ -22,6 +24,7 @@ The player can interact with different objects in the world.
 
 - **Items**: Can be grabbed (`SPACE`) and thrown (`SPACE`). Thrown items bounce off surfaces.
 - **Blocks**: Can be grabbed (`SPACE`) and released (`SPACE`). They are not throwable. Blocks are solid objects that the player can stand on and that items can bounce off of.
+- **Keys**: Can be collected by touching them. They are the goal of the game.
 
 ### Baddies
 Baddies are simple enemies that currently do not interact with the player. Their behavior is as follows:

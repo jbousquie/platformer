@@ -17,6 +17,11 @@ A attempt to create a platformer game using Rust and [macroquad](https://github.
 
 Baddies are simple enemies that roam the level. They walk back and forth, randomly jump, and can fall off platforms. Upon colliding with a block, they have a small chance to pick it up and carry it for a while. They do not interact with the player.
 
+### Keys
+
+Keys are collectible items. The goal of the game is to collect all of them.
+
+
 ## License & Credits
 
 ### LICENSE for all assets:
