@@ -67,6 +67,11 @@ impl Baddie {
 
     /// Updates the baddie's state, including position, velocity, and state, based on physics.
     pub fn update(&mut self, dt: f32) {
+        // Apply gravity to all states except Elevation
+        if self.state != BaddieState::Elevation {
+            self.velocity.y += GRAVITY * dt;
+        }
+
         if self.state == BaddieState::Elevation {
             self.velocity.y = BADDIE_ELEVATION_SPEED;
             self.velocity.x = 0.0;
@@ -93,9 +98,6 @@ impl Baddie {
                 self.state = BaddieState::Idle;
             }
         } else {
-            // Apply gravity
-            self.velocity.y += GRAVITY * dt;
-
             // Set horizontal velocity based on direction
             self.velocity.x = if self.facing_right {
                 BADDIE_SPEED

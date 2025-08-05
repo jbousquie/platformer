@@ -3,13 +3,8 @@ use std::time::Instant;
 use macroquad::prelude::*;
 
 use crate::{
-    blocks::BlockState,
-    constants::BLOCK_OFFSET,
-    game::Game,
-    game_states::GameState,
-    items::ItemState,
-    physics,
-    player::HeldObject,
+    blocks::BlockState, constants::BLOCK_OFFSET, game::Game, game_states::GameState,
+    items::ItemState, physics, player::HeldObject,
 };
 
 use crate::constants::BACKGROUND_COLOR;
@@ -205,12 +200,15 @@ fn update_baddies_and_collisions(game: &mut Game, dt: f32) {
     for baddie in &game.baddies {
         if let Some(block_id) = baddie.grabbed_block_id {
             if let Some(block) = game.level.blocks.get_mut(block_id) {
-                block.position = baddie.position;
-                block.position.y -= BLOCK_OFFSET;
+                // Vertically align the block with the baddy, using the original offset.
+                block.position.y = baddie.position.y - block.size.y + BLOCK_OFFSET;
+
+                // Horizontally position the block in front of the baddy with a small gap.
                 if baddie.facing_right {
-                    block.position.x += baddie.size.x;
+                    block.position.x = baddie.rect().right() + crate::constants::HELD_BLOCK_OFFSET;
                 } else {
-                    block.position.x -= block.size.x;
+                    block.position.x =
+                        baddie.rect().left() - block.size.x - crate::constants::HELD_BLOCK_OFFSET;
                 }
             }
         }

@@ -25,6 +25,8 @@ pub const ITEM_MIN_BOUNCE_SPEED: f32 = 60.0;
 pub const BLOCK_SIZE: f32 = PLAYER_SIZE * 1.2;
 pub const BLOCK_COUNT: usize = 27;
 pub const BLOCK_OFFSET: f32 = 20.;
+/// The small distance to offset a held block from the baddy to prevent immediate self-collision.
+pub const HELD_BLOCK_OFFSET: f32 = 1.0;
 pub const MAX_BADDIES: usize = 8;
 pub const BADDIE_SIZE: f32 = PLAYER_SIZE * 0.8;
 pub const BADDIE_SPEED: f32 = 200.;
@@ -39,7 +41,7 @@ pub const BADDIE_GRAB_CHANCE: f32 = 0.05;
 pub const BADDIE_MIN_GRAB_DURATION: f32 = 3.0;
 pub const BADDIE_MAX_GRAB_DURATION: f32 = 10.0;
 pub const BADDIE_MIN_ITEM_HOLD_DURATION: f32 = 1.0;
-pub const BADDIE_MAX_ITEM_HOLD_DURATION: f32 = 2.0;
+pub const BADDIE_MAX_ITEM_HOLD_DURATION: f32 = 8.0;
 pub const BADDIE_GRAB_ITEM_CHANCE: f32 = 0.6;
 
 // --- Colors

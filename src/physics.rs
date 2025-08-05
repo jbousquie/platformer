@@ -188,6 +188,12 @@ pub fn resolve_baddie_collisions(
         // --- Baddie vs. Blocks (Side Collisions) ---
         // Handle horizontal collisions with blocks.
         for (i, block) in blocks.iter_mut().enumerate() {
+            if let Some(grabbed_id) = baddie.grabbed_block_id {
+                if grabbed_id == i {
+                    continue;
+                }
+            }
+
             if block.state == BlockState::Idle {
                 let baddie_rect = baddie.rect();
                 let block_rect = block.rect();
