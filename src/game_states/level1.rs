@@ -33,6 +33,7 @@ fn update(game: &mut Game, dt: f32) {
     update_player_and_collisions(game, dt);
     update_world_objects(game, dt);
     update_baddies_and_collisions(game, dt);
+    update_keys(game);
 
     game.camera.update(&game.player);
 
@@ -303,4 +304,11 @@ fn log_fps(frame_count: &mut u32, last_log_time: &mut Instant) {
         *frame_count = 0;
         *last_log_time = Instant::now();
     }
+}
+
+fn update_keys(game: &mut Game) {
+    let player_rect = game.player.rect();
+    game.level
+        .keys
+        .retain(|key| !key.rect.overlaps(&player_rect));
 }

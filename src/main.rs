@@ -9,6 +9,7 @@ mod constants;
 mod game;
 mod game_states;
 mod items;
+mod keys;
 mod level;
 mod physics;
 mod player;

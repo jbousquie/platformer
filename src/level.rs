@@ -5,6 +5,7 @@
 use crate::blocks::Block;
 use crate::constants::*;
 use crate::items::Item;
+use crate::keys::Key;
 use macroquad::prelude::*;
 use macroquad::rand;
 
@@ -20,6 +21,7 @@ pub struct Level {
     pub platforms: Vec<Rect>,
     pub items: Vec<Item>,
     pub blocks: Vec<Block>,
+    pub keys: Vec<Key>,
 }
 
 impl Level {
@@ -92,6 +94,24 @@ impl Level {
             blocks.push(Block::new(block_pos));
         }
 
+        let mut keys = vec![];
+        let key_size = PLAYER_SIZE * 1.2;
+        for i in 0..2 {
+            // columns
+            for j in 0..2 {
+                // rows
+                let offset_x = i as f32 * screen_width;
+                let offset_y = j as f32 * screen_height;
+                keys.push(Key::new(
+                    vec2(
+                        offset_x + screen_width * 0.95 - key_size / 2.0,
+                        offset_y + screen_height * 0.15 - key_size / 2.0,
+                    ),
+                    key_size,
+                ));
+            }
+        }
+
         Self {
             ground: Rect::new(0., LEVEL_HEIGHT - GROUND_HEIGHT, LEVEL_WIDTH, GROUND_HEIGHT),
             ceiling: Rect::new(0., 0., LEVEL_WIDTH, CEILING_HEIGHT),
@@ -100,6 +120,7 @@ impl Level {
             platforms,
             items,
             blocks,
+            keys,
         }
     }
 
@@ -137,7 +158,13 @@ impl Level {
 
         // Draw platforms
         for platform in &self.platforms {
-            draw_rectangle(platform.x, platform.y, platform.w, platform.h, PLATFORM_COLOR);
+            draw_rectangle(
+                platform.x,
+                platform.y,
+                platform.w,
+                platform.h,
+                PLATFORM_COLOR,
+            );
         }
 
         // Draw blocks
@@ -145,7 +172,10 @@ impl Level {
             block.draw();
         }
 
-
+        // Draw keys
+        for key in &self.keys {
+            key.draw();
+        }
 
         // Draw items
         for item in &self.items {
